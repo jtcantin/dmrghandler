@@ -1,0 +1,34 @@
+@startuml main
+start
+:Generate parameter files;
+:Prepare job array script;
+:Prepare single job script;
+:Submit job array;
+fork
+:Run single job on Node1;
+fork
+:load data, including prior runs;
+:prepare calculation;
+while(ΔE_pred big, and time limit or bond dimension limit not reached) is (true)
+:Choose new bond dimension;
+:Perform a single run of the DMRG algorithm;
+:Save data to HDF5 file;
+:Perform the extrapolation;
+endwhile
+:plot results;
+fork again
+:Other DMRG loops;
+end fork
+:Collect HDF5s, plots, and logs and Zip them;
+:Move data to scratch;
+:Move data to home folder;
+fork again
+:Run single job on Node2;
+:Other DMRG loops;
+:Collect HDF5s, plots, and logs and Zip them;
+:Move data to scratch;
+:Move data to home folder;
+end fork
+end
+@enduml
+

@@ -146,3 +146,6 @@ env_dmrghandler/*
 
 # Poetry
 poetry.lock
+
+# VS Code
+.vscode/*
