@@ -5,8 +5,9 @@ start
 :Prepare single job script;
 :Submit job array;
 fork
-:Run single job on Node1;
+partition #lightBlue "Node1"
 fork
+partition #lightGreen "DMRG Loop 1"
 :load data, including prior runs;
 :prepare calculation;
 while(ΔE_pred big, and time limit or bond dimension limit not reached) is (true)
@@ -16,18 +17,23 @@ while(ΔE_pred big, and time limit or bond dimension limit not reached) is (true
 :Perform the extrapolation;
 endwhile
 :plot results;
+end group
 fork again
-:Other DMRG loops;
-end fork
+partition #lightGreen "DMRG Loop X"
+:DMRG loop;
+end group
+end merge
 :Collect HDF5s, plots, and logs and Zip them;
 :Move data to scratch;
 :Move data to home folder;
+end group
 fork again
-:Run single job on Node2;
+partition #lightBlue "Node2"
 :Other DMRG loops;
 :Collect HDF5s, plots, and logs and Zip them;
 :Move data to scratch;
 :Move data to home folder;
+end group
 end fork
 end
 @enduml
