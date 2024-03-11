@@ -149,3 +149,9 @@ poetry.lock
 
 # VS Code
 .vscode/*
+
+#General
+simple_cas_planted_solutions_mod.ipynb
+tests/temp/*
+tests/restart/*
+ferm_utils.py
