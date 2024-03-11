@@ -1,13 +1,39 @@
+import sys
 import unittest
 
 import numpy as np
 import numpy.testing as npt
 
+import dmrghandler.dmrghandler
 import dmrghandler.pyscf_wrappers as pyscf_wrappers
 import dmrghandler.qchem_dmrg_calc as qchem_dmrg_calc
 
 test_rtol = 1e-5
 test_atol = 1e-8
+
+import logging
+
+# create logger
+logger = logging.getLogger("dmrghandler")
+logger.setLevel(logging.DEBUG)
+# create file handler which logs even debug messages
+fh = logging.FileHandler("dmrghandler.log")
+fh.setLevel(logging.DEBUG)
+# create console handler with a higher log level
+ch = logging.StreamHandler()
+ch.setLevel(logging.ERROR)
+# create formatter and add it to the handlers
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+fh.setFormatter(formatter)
+ch.setFormatter(formatter)
+# add the handlers to the logger
+logger.addHandler(fh)
+logger.addHandler(ch)
+
+# To access the original stdout/stderr, use sys.__stdout__/sys.__stderr__
+# By xjcl From https://stackoverflow.com/a/66209331
+sys.stdout = dmrghandler.dmrghandler.LoggerWriter(logger.info)
+sys.stderr = dmrghandler.dmrghandler.LoggerWriter(logger.error)
 
 
 class TestDmrgSmallMolecule(unittest.TestCase):

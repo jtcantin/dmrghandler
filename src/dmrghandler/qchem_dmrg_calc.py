@@ -2,6 +2,10 @@
 This module contains functions for running a single DMRG calculation.
 """
 
+import inspect
+import logging
+
+log = logging.getLogger(__name__)
 import numpy as np
 from pyblock2.driver.core import DMRGDriver, SymmetryTypes
 
@@ -86,7 +90,7 @@ def single_qchem_dmrg_calc(
     initial_sweep_direction = dmrg_parameters[
         "initial_sweep_direction"
     ]  # Default is None, True means forward sweep (left-to-right)
-    print("LINE 89")
+    log.debug(f"LINE {inspect.getframeinfo(inspect.currentframe()).lineno}")
     assert (
         num_spin_orbitals == 2 * num_orbitals
     ), "The number of spin orbitals must be twice the number of orbitals."
@@ -119,7 +123,7 @@ def single_qchem_dmrg_calc(
         spin = two_Sz
     else:
         raise ValueError(f"Invalid symmetry type: {symmetry_type_string}")
-    print("LINE 122")
+    log.debug(f"LINE {inspect.getframeinfo(inspect.currentframe()).lineno}")
     driver = DMRGDriver(
         stack_mem=stack_mem,
         scratch=temp_dir,
@@ -132,7 +136,7 @@ def single_qchem_dmrg_calc(
         stack_mem_ratio=0.4,  # Default value
         fp_codec_cutoff=1e-16,  # Default value
     )
-    print("LINE 135")
+    log.debug(f"LINE {inspect.getframeinfo(inspect.currentframe()).lineno}")
     driver.initialize_system(
         n_sites=num_orbitals,
         n_elec=num_electrons,
@@ -147,7 +151,7 @@ def single_qchem_dmrg_calc(
         target=None,  # Default value
         hamil_init=True,  # Default value
     )
-    print("LINE 150")
+    log.debug(f"LINE {inspect.getframeinfo(inspect.currentframe()).lineno}")
     one_body_tensor_reordered, two_body_tensor_factor_half_reordered = (
         reorder_integrals(
             one_body_tensor=one_body_tensor,
@@ -155,7 +159,7 @@ def single_qchem_dmrg_calc(
             reordering_method=reordering_method,
         )
     )
-    print("LINE 158")
+    log.debug(f"LINE {inspect.getframeinfo(inspect.currentframe()).lineno}")
     qchem_hami_mpo = driver.get_qc_mpo(
         h1e=one_body_tensor_reordered,
         g2e=two_body_tensor_factor_half_reordered,
@@ -189,7 +193,7 @@ def single_qchem_dmrg_calc(
         # gaopt_opts=None,  # Default value, options for gaopt reordering
         iprint=verbosity,
     )
-    print("LINE 192")
+    log.debug(f"LINE {inspect.getframeinfo(inspect.currentframe()).lineno}")
     # Generate the initial MPS
     ############################
     if initial_mps_method == "random":
@@ -198,7 +202,7 @@ def single_qchem_dmrg_calc(
         raise NotImplementedError(
             f"Not implemented initial MPS method: {initial_mps_method}"
         )
-    print("LINE 201")
+    log.debug(f"LINE {inspect.getframeinfo(inspect.currentframe()).lineno}")
     initial_ket = driver.get_random_mps(
         tag="init_ket",
         bond_dim=init_state_bond_dimension,
@@ -215,13 +219,13 @@ def single_qchem_dmrg_calc(
         orig_dot=init_state_direct_two_site_construction_bool,  # Default is False; if False, create MPS as one-site, then convert to two-site
         # If True, create MPS as two-site or one-site directly
     )
-    # print("LINE 218")
+    # log.debug(f"LINE {inspect.getframeinfo(inspect.currentframe()).lineno}")
     # b = driver.expr_builder()
     # b.add_term("(C+D)0", [0, 0], np.sqrt(2))
     # n_mpo = driver.get_mpo(b.finalize(), iprint=0)
 
     # n_0 = driver.expectation(initial_ket, n_mpo, initial_ket)
-    # print("N0 expectation = %20.15f" % (n_0))
+    # log.debug("N0 expectation = %20.15f" % (n_0))
     # initial_one_particle_density_matrix = driver.get_1pdm(initial_ket)
     # initial_one_particle_density_matrix = driver.get_npdm(
     #     ket=initial_ket,
@@ -238,7 +242,7 @@ def single_qchem_dmrg_calc(
     #     iprint=verbosity,
     #     # max_bond_dim=None,  # No restriction on the bond dimension
     # )
-    # print("LINE 234")
+    # log.debug(f"LINE {inspect.getframeinfo(inspect.currentframe()).lineno}")
     # initial_two_particle_density_matrix = driver.get_npdm(
     #     ket=initial_ket,
     #     pdm_type=2,
@@ -254,11 +258,11 @@ def single_qchem_dmrg_calc(
     #     iprint=verbosity,
     #     # max_bond_dim=None,  # No restriction on the bond dimension
     # )
-    print("LINE 250")
+    log.debug(f"LINE {inspect.getframeinfo(inspect.currentframe()).lineno}")
     initial_bond_dims = initial_ket.info.bond_dim
 
     ket_optimized = driver.copy_mps(initial_ket, tag="ket_optimized")
-    print("LINE 251")
+    log.debug(f"LINE {inspect.getframeinfo(inspect.currentframe()).lineno}")
     dmrg_ground_state_energy = driver.dmrg(
         mpo=qchem_hami_mpo,
         ket=ket_optimized,
@@ -281,7 +285,7 @@ def single_qchem_dmrg_calc(
         # sweep_start=sweep_start,
         # forward=initial_sweep_direction,
     )
-    print("LINE 277")
+    log.debug(f"LINE {inspect.getframeinfo(inspect.currentframe()).lineno}")
     dmrg_results = {
         "dmrg_ground_state_energy": dmrg_ground_state_energy,
         "initial_ket": initial_ket,

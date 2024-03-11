@@ -1,5 +1,8 @@
 """Wrappers for pyscf"""
 
+import logging
+
+log = logging.getLogger(__name__)
 import numpy as np
 import pyscf
 import pyscf.fci
