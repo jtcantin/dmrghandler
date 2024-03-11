@@ -48,14 +48,15 @@ def dmrg_energy_extrapolation(
         if (rel_energies <= 0).any():
             for iiter, val in enumerate(rel_energies):
                 if val <= 0:
-                    if np.abs(val) < neg_log_threshold:
-                        rel_energies[iiter] = np.abs(val) + 1e-16
-                    # print(f"val: {val}")
-                    else:
-                        raise ValueError(
-                            f"Relative energy is less than or equal to zero. energies_dmrg: {energies_dmrg}, energy_estimated: {energy_estimated}\n"
-                            f"rel_energies: {rel_energies}\n"
-                        )
+                    rel_energies[iiter] = np.abs(val) + 1e-16
+                    # if np.abs(val) < neg_log_threshold:
+                    #     rel_energies[iiter] = np.abs(val) + 1e-16
+                    # # print(f"val: {val}")
+                    # else:
+                    #     raise ValueError(
+                    #         f"Relative energy is less than or equal to zero. energies_dmrg: {energies_dmrg}, energy_estimated: {energy_estimated}\n"
+                    #         f"rel_energies: {rel_energies}\n"
+                    #     )
 
         ln_rel_energies = np.log(rel_energies)
         # if np.isnan(ln_rel_energies).any():

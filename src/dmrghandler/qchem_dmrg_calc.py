@@ -286,7 +286,12 @@ def single_qchem_dmrg_calc(
         # forward=initial_sweep_direction,
     )
     log.debug(f"LINE {inspect.getframeinfo(inspect.currentframe()).lineno}")
-    dmrg_results = {
+    sweep_bond_dims, sweep_max_discarded_weight, sweep_energies = (
+        driver.get_dmrg_results()
+    )
+
+    dmrg_discarded_weight = sweep_max_discarded_weight[-1]
+    dmrg_results_dict = {
         "dmrg_ground_state_energy": dmrg_ground_state_energy,
         "initial_ket": initial_ket,
         # "initial_one_particle_density_matrix": initial_one_particle_density_matrix,
@@ -294,9 +299,13 @@ def single_qchem_dmrg_calc(
         "initial_bond_dims": initial_bond_dims,
         "ket_optimized": ket_optimized,
         # "singular_value_spectra": driver._sweep_wfn_spectra,
+        "dmrg_discarded_weight": dmrg_discarded_weight,
+        "sweep_bond_dims": sweep_bond_dims,
+        "sweep_max_discarded_weight": sweep_max_discarded_weight,
+        "sweep_energies": sweep_energies,
     }
 
-    return dmrg_results
+    return dmrg_results_dict
 
 
 def reorder_integrals(
