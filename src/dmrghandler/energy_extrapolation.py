@@ -3,13 +3,14 @@ import logging
 log = logging.getLogger(__name__)
 from typing import List
 
+import matplotlib.pyplot as plt
 import numpy as np
 import scipy.optimize
 
 module_verbosity = 2
 module_ftol = 1e-8
 module_xtol = 1e-8
-module_gtol = 1e-8
+module_gtol = 1e-12
 log_shift = 1e-16
 neg_log_threshold = 1e-7
 
@@ -113,8 +114,8 @@ def discarded_weight_extrapolation(
         x0=initial_guess,
         # jac=discarded_weight_residuals_gradient_matrix,
         jac="3-point",
-        bounds=([0, 0, -np.inf], [1, np.inf, 0]),  # alpha, b, E_estimated
-        # 1 >= alpha = exp(a) >= 0, as a<=0 as ln ΔE_rel <= 0 near E_estimated and as E_DMRG >= E_estimated
+        bounds=([0, 0, -np.inf], [np.inf, np.inf, 0]),  # alpha, b, E_estimated
+        # np.inf >= alpha = exp(a) >= 0
         # b >= 0 as it is required δϵ^b -> 0 as δϵ -> 0
         method="dogbox",  # Recommended by Scipy for small problems with bounds
         ftol=module_ftol,
@@ -296,3 +297,181 @@ def discarded_weight_predictor(discarded_weights, alpha, b):
     a = np.log(alpha)  # α = exp(a), np.log is the natural logarithm
     ln_del_E_rel = a + b * np.log(discarded_weights)
     return ln_del_E_rel
+
+
+def plot_extrapolation(
+    discarded_weights: List[float],
+    energies_dmrg: List[float],
+    fit_parameters: List[float],
+    bond_dims: List[int] = None,
+    plot_filename: str = None,
+    figNum: int = 0,
+):
+    """
+    Plot the extrapolation results.
+
+    Args:
+        discarded_weights: list of discarded_weights
+        energies_dmrg: list of energies from DMRG
+        fit_parameters: list of fit parameters
+        plot_file: file to save the plot
+    """
+    l_w = 2.0
+    fs = 35
+    fs2 = 30
+    fs3 = fs - 10
+    discarded_weights_local = discarded_weights + 1e-30
+    # ln ΔE_rel vs ln(δϵ) plot
+
+    label_1 = r"$\log(\delta \epsilon)$"
+    label_2 = r"$\log(\Delta E_{\mathrm{rel}})$"
+
+    # plt.clf()
+    fig = plt.figure(figNum, facecolor="white", figsize=6 * np.array([3, 2.25]))
+    ax = plt.gca()
+
+    rel_energies = np.abs(energies_dmrg - fit_parameters[-1]) / np.abs(
+        fit_parameters[-1]
+    )
+    log.info(f"fit_parameters,plotting: {fit_parameters}")
+    log.info(f"energies_dmrg,plotting: {energies_dmrg}")
+    log.info(f"rel_energies,plotting: {rel_energies}")
+    ax.plot(
+        np.log(discarded_weights_local),
+        np.log(rel_energies),
+        "o",
+        label="Data",
+    )
+
+    predicted_values = discarded_weight_predictor(
+        discarded_weights_local, fit_parameters[0], fit_parameters[1]
+    )
+    ax.plot(np.log(discarded_weights_local), predicted_values, label="Fit", marker="s")
+
+    ax.legend(fontsize=fs2)
+    plt.xlabel(label_1, fontsize=fs, labelpad=10)
+    # plt.ylabel(r"$\log(\mathrm{Extremum of Signal})$", fontsize=fs)
+    plt.ylabel(label_2, fontsize=fs)
+
+    plt.yticks(fontsize=fs)
+    plt.xticks(fontsize=fs)
+    # ax.xaxis.set_ticks([2,4,6,8,10,12,14,16,18,20])
+    # plt.ylim(top=100)
+    # plt.ylim(bottom=0.98,top=1.05)
+
+    ax.tick_params(axis="both", width=l_w, which="both")
+    ax.tick_params(axis="both", length=5, which="major")
+    ax.tick_params(axis="both", length=3, which="minor")
+    ##ax.yaxis.set_tick_params(width=l_w)
+    ax.spines["top"].set_linewidth(l_w)
+    ax.spines["bottom"].set_linewidth(l_w)
+    ax.spines["left"].set_linewidth(l_w)
+    ax.spines["right"].set_linewidth(l_w)
+
+    # ax.legend(prop={'size': 20},
+    # loc='upper left',
+    # ncol=2,
+    # )
+
+    # ax.legend(bbox_to_anchor=(0.995, 0.9),
+    # bbox_transform=ax.transAxes,
+    # loc='upper right',
+    # fontsize=fs2,
+    # )
+
+    fig.tight_layout()
+
+    if plot_filename is not None:
+        fig.savefig(plot_filename + "_lnDeltaE.pdf", format="pdf", dpi=300)
+
+    # E_DMRG vs δϵ plot
+    ################################
+    fig = plt.figure(figNum + 1, facecolor="white", figsize=6 * np.array([3, 2.25]))
+    ax = plt.gca()
+    ax.plot(np.log(discarded_weights_local), energies_dmrg, "o", label="Data")
+    predicted_values = (
+        (fit_parameters[2])
+        * fit_parameters[0]
+        * np.power(discarded_weights_local, fit_parameters[1])
+    ) + fit_parameters[2]
+    ax.plot(np.log(discarded_weights_local), predicted_values, label="Fit", marker="s")
+    ax.legend(fontsize=fs2)
+    plt.xlabel(label_1, fontsize=fs, labelpad=10)
+    plt.ylabel("E_DMRG", fontsize=fs)
+
+    plt.yticks(fontsize=fs)
+    plt.xticks(fontsize=fs)
+    # ax.xaxis.set_ticks([2,4,6,8,10,12,14,16,18,20])
+    # plt.ylim(top=100)
+    # plt.ylim(bottom=0.98,top=1.05)
+
+    ax.tick_params(axis="both", width=l_w, which="both")
+    ax.tick_params(axis="both", length=5, which="major")
+    ax.tick_params(axis="both", length=3, which="minor")
+    ##ax.yaxis.set_tick_params(width=l_w)
+    ax.spines["top"].set_linewidth(l_w)
+    ax.spines["bottom"].set_linewidth(l_w)
+    ax.spines["left"].set_linewidth(l_w)
+    ax.spines["right"].set_linewidth(l_w)
+
+    # ax.legend(prop={'size': 20},
+    # loc='upper left',
+    # ncol=2,
+    # )
+
+    # ax.legend(bbox_to_anchor=(0.995, 0.9),
+    # bbox_transform=ax.transAxes,
+    # loc='upper right',
+    # fontsize=fs2,
+    # )
+
+    fig.tight_layout()
+
+    if plot_filename is not None:
+        fig.savefig(plot_filename + "_EDMRG.pdf", format="pdf", dpi=300)
+
+    # E_DMRG vs 1/bond_dimension plot
+    ################################
+    fig = plt.figure(figNum + 2, facecolor="white", figsize=6 * np.array([3, 2.25]))
+    ax = plt.gca()
+    ax.plot(np.log(1 / np.array(bond_dims)), energies_dmrg, "o", label="Data")
+    # predicted_values = (
+    #     (fit_parameters[2])
+    #     * fit_parameters[0]
+    #     * np.power(1 / np.array(bond_dims), fit_parameters[1])
+    # ) + fit_parameters[2]
+    # ax.plot(1 / np.array(bond_dims), predicted_values, label="Fit", marker="s")
+    ax.legend(fontsize=fs2)
+    plt.xlabel(r"$1/\mathrm{bond\ dimension}$", fontsize=fs, labelpad=10)
+    plt.ylabel("E_DMRG", fontsize=fs)
+
+    plt.yticks(fontsize=fs)
+    plt.xticks(fontsize=fs)
+    # ax.xaxis.set_ticks([2,4,6,8,10,12,14,16,18,20])
+    # plt.ylim(top=100)
+    # plt.ylim(bottom=0.98,top=1.05)
+
+    ax.tick_params(axis="both", width=l_w, which="both")
+    ax.tick_params(axis="both", length=5, which="major")
+    ax.tick_params(axis="both", length=3, which="minor")
+    ##ax.yaxis.set_tick_params(width=l_w)
+    ax.spines["top"].set_linewidth(l_w)
+    ax.spines["bottom"].set_linewidth(l_w)
+    ax.spines["left"].set_linewidth(l_w)
+    ax.spines["right"].set_linewidth(l_w)
+
+    # ax.legend(prop={'size': 20},
+    # loc='upper left',
+    # ncol=2,
+    # )
+
+    # ax.legend(bbox_to_anchor=(0.995, 0.9),
+    # bbox_transform=ax.transAxes,
+    # loc='upper right',
+    # fontsize=fs2,
+    # )
+
+    fig.tight_layout()
+
+    if plot_filename is not None:
+        fig.savefig(plot_filename + "_EDMRG_bond_dims.pdf", format="pdf", dpi=300)

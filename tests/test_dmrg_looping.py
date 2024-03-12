@@ -6,6 +6,7 @@ import numpy.testing as npt
 
 import dmrghandler.dmrg_looping as dmrg_looping
 import dmrghandler.dmrghandler
+import dmrghandler.energy_extrapolation as energy_extrapolation
 import dmrghandler.pyscf_wrappers as pyscf_wrappers
 import dmrghandler.qchem_dmrg_calc as qchem_dmrg_calc
 
@@ -42,6 +43,7 @@ log = logger
 class TestDmrgLoopingSmallMolecule(unittest.TestCase):
     def dmrg_loop_func_su2(
         self,
+        molecule_name,
         basis,
         geometry,
         num_unpaired_electrons,
@@ -141,6 +143,32 @@ class TestDmrgLoopingSmallMolecule(unittest.TestCase):
         log.info(f"unmodified_fit_parameters_list: {unmodified_fit_parameters_list}")
         log.info(f"fit_parameters_list: {fit_parameters_list}")
 
+        # Get final extrapolated energy
+        result_obj, energy_estimated, fit_parameters, R_squared = (
+            energy_extrapolation.dmrg_energy_extrapolation(
+                energies_dmrg=past_energies_dmrg,
+                independent_vars=past_discarded_weights,
+                extrapolation_type="discarded_weight",
+                past_parameters=fit_parameters_list[-1],
+                verbosity=2,
+            )
+        )
+        log.info(f"energy_estimated: {energy_estimated}")
+        log.info(f"fit_parameters: {fit_parameters}")
+        log.info(f"R_squared: {R_squared}")
+        log.info(f"result_obj.message: {result_obj.message}")
+        log.info(f"result_obj.cost: {result_obj.cost}")
+        log.info(f"result_obj.fun: {result_obj.fun}")
+
+        energy_extrapolation.plot_extrapolation(
+            discarded_weights=past_discarded_weights,
+            energies_dmrg=past_energies_dmrg,
+            fit_parameters=fit_parameters,
+            bond_dims=bond_dims_used,
+            plot_filename=f"tests/temp/energy_extrapolation_{molecule_name}",
+            figNum=0,
+        )
+
         npt.assert_allclose(
             loop_results["energy_estimated"],
             E_FCI_HF,
@@ -163,6 +191,7 @@ class TestDmrgLoopingSmallMolecule(unittest.TestCase):
     def test_h2_sto6g_fci_su2(self):
 
         # Molecule Info
+        molecule_name = "H2, sto6g"
         basis = "sto6g"  # 4 spin orbitals
         bond_length = 1.0
         geometry = f"H 0 0 0; H 0 0 {bond_length}"
@@ -186,6 +215,7 @@ class TestDmrgLoopingSmallMolecule(unittest.TestCase):
         )
 
         self.dmrg_loop_func_su2(
+            molecule_name=molecule_name,
             basis=basis,
             geometry=geometry,
             num_unpaired_electrons=num_unpaired_electrons,
@@ -205,6 +235,7 @@ class TestDmrgLoopingSmallMolecule(unittest.TestCase):
     def test_beh2_sto3g_fci_su2(self):
 
         # Molecule Info
+        molecule_name = "BeH2, sto3g"
         basis = "sto3g"  # 4 spin orbitals
         bond_length = 1.0
         geometry = f"Be 0 0 0; H 0 0 {bond_length}; H 0 0 -{bond_length}"
@@ -215,7 +246,7 @@ class TestDmrgLoopingSmallMolecule(unittest.TestCase):
         # DMRG info
         max_bond_dimension = 100
         max_time_limit_sec = 20
-        min_energy_change_hartree = 1e-8
+        min_energy_change_hartree = 1e-4
         init_state_bond_dimension = 2
         max_num_sweeps = 20
         energy_convergence_threshold = 1e-8
@@ -228,6 +259,7 @@ class TestDmrgLoopingSmallMolecule(unittest.TestCase):
         )
 
         self.dmrg_loop_func_su2(
+            molecule_name=molecule_name,
             basis=basis,
             geometry=geometry,
             num_unpaired_electrons=num_unpaired_electrons,
@@ -247,6 +279,7 @@ class TestDmrgLoopingSmallMolecule(unittest.TestCase):
     def test_hneg_aug_cc_pVDZ_fci_su2(self):
 
         # Molecule Info
+        molecule_name = "H-, aug-cc-pVDZ"
         basis = "aug-cc-pVDZ"  # 4 spin orbitals
         # bond_length = 1.0
         geometry = f"H 0 0 0"
@@ -270,6 +303,7 @@ class TestDmrgLoopingSmallMolecule(unittest.TestCase):
         )
 
         self.dmrg_loop_func_su2(
+            molecule_name=molecule_name,
             basis=basis,
             geometry=geometry,
             num_unpaired_electrons=num_unpaired_electrons,
