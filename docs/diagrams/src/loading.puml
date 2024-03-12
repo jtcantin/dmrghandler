@@ -1,0 +1,19 @@
+@startuml data_loading
+start
+:Get filename;
+switch (file type)
+case (FCIDUMP)
+  :Use pyscf.tools.fcidump.read 
+  to read FCIDUMP file;
+  :Use pyscf.ao2mo.restore to get 
+  non-symmetry-reduced 2-electron integrals;
+  :Load metadata into dict;
+case (HDF5) 
+  :Use h5py wrapper to read data and attributes;
+  :Load metadata into dict;
+case (Other)
+  :ERROR;
+endswitch
+
+@enduml
+

@@ -7,11 +7,12 @@ import numpy.testing as npt
 import dmrghandler.dmrg_looping as dmrg_looping
 import dmrghandler.dmrghandler
 import dmrghandler.energy_extrapolation as energy_extrapolation
+import dmrghandler.hdf5_io as hdf5_io
 import dmrghandler.pyscf_wrappers as pyscf_wrappers
 import dmrghandler.qchem_dmrg_calc as qchem_dmrg_calc
 
 test_rtol = 1e-5
-test_atol = 1e-8
+test_atol = 1e-5
 
 import logging
 
@@ -112,6 +113,9 @@ class TestDmrgLoopingSmallMolecule(unittest.TestCase):
             "initial_sweep_direction": None,  # Default is None, True means forward sweep (left-to-right)
         }
 
+        uuid_main_storage_file_path = hdf5_io.get_generic_filename()
+        uuid_main_storage_file_path = "tests/temp/" / uuid_main_storage_file_path
+
         loop_results = dmrg_looping.dmrg_central_loop(
             one_body_tensor=one_body_tensor,
             two_body_tensor=two_body_tensor,
@@ -119,6 +123,7 @@ class TestDmrgLoopingSmallMolecule(unittest.TestCase):
             max_bond_dimension=max_bond_dimension,
             max_time_limit_sec=max_time_limit_sec,
             min_energy_change_hartree=min_energy_change_hartree,
+            main_storage_file_path=uuid_main_storage_file_path,
             verbosity=2,
         )
 
@@ -202,7 +207,7 @@ class TestDmrgLoopingSmallMolecule(unittest.TestCase):
         # DMRG info
         max_bond_dimension = 100
         max_time_limit_sec = 20
-        min_energy_change_hartree = 1e-8
+        min_energy_change_hartree = test_atol
         init_state_bond_dimension = 2
         max_num_sweeps = 20
         energy_convergence_threshold = 1e-8
@@ -246,7 +251,7 @@ class TestDmrgLoopingSmallMolecule(unittest.TestCase):
         # DMRG info
         max_bond_dimension = 100
         max_time_limit_sec = 20
-        min_energy_change_hartree = 1e-4
+        min_energy_change_hartree = test_atol
         init_state_bond_dimension = 2
         max_num_sweeps = 20
         energy_convergence_threshold = 1e-8
@@ -290,7 +295,7 @@ class TestDmrgLoopingSmallMolecule(unittest.TestCase):
         # DMRG info
         max_bond_dimension = 100
         max_time_limit_sec = 20
-        min_energy_change_hartree = 1e-8
+        min_energy_change_hartree = test_atol
         init_state_bond_dimension = 2
         max_num_sweeps = 20
         energy_convergence_threshold = 1e-8

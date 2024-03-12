@@ -1,9 +1,12 @@
+import gc
 import logging
 import time
+from pathlib import Path
 
 import numpy as np
 
 import dmrghandler.energy_extrapolation as energy_extrapolation
+import dmrghandler.hdf5_io as hdf5_io
 import dmrghandler.qchem_dmrg_calc as qchem_dmrg_calc
 
 log = logging.getLogger(__name__)
@@ -16,13 +19,16 @@ def dmrg_central_loop(
     max_bond_dimension: int,
     max_time_limit_sec: int,
     min_energy_change_hartree: float,
+    main_storage_file_path: str,
     verbosity: int = 0,
 ):
     wall_time_start_ns = time.perf_counter_ns()
     cpu_time_start_ns = time.process_time_ns()
+    base_mps_storage_folder = Path(dmrg_parameters["restart_dir"])
 
     # Initial two calculations
     # Run DMRG
+    dmrg_parameters["restart_dir"] = str(base_mps_storage_folder / "dmrg_first_calc")
     dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc(
         one_body_tensor=one_body_tensor,
         two_body_tensor=two_body_tensor,
@@ -34,6 +40,34 @@ def dmrg_central_loop(
     discarded_weights = np.array(dmrg_results["dmrg_discarded_weight"])
     bond_dims_used = np.array(dmrg_parameters["sweep_schedule_bond_dims"][-1])
 
+    # Get initial_ket and ket_optimized and convert them to a representation of tensors
+    # See https://github.com/block-hczhai/block2-preview/blob/b4eb5bfe1020ffed6c5e90db444dd878052dd66d/pyblock2/algebra/core.py#L483
+    # Perhaps use a dict that has a partial view of dmrg_results and then add representation
+    dmrg_results_saveable = {}
+    for key, value in dmrg_results.items():
+        if key in ["ket_optimized", "initial_ket"]:
+            dmrg_results_saveable[key] = repr(value.tensors)
+        else:
+            dmrg_results_saveable[key] = value
+
+    hdf5_io.save_many_variables_to_hdf5(
+        hdf5_filepath=main_storage_file_path,
+        variables=dmrg_parameters,
+        access_mode="a",
+        group=f"dmrg_first_calc/dmrg_parameters",
+        overwrite=False,
+    )
+    hdf5_io.save_many_variables_to_hdf5(
+        hdf5_filepath=main_storage_file_path,
+        variables=dmrg_results_saveable,
+        access_mode="a",
+        group=f"dmrg_first_calc/dmrg_results",
+        overwrite=False,
+    )
+    del dmrg_results_saveable  # Clear memory
+    gc.collect()  # Collect garbage
+    dmrg_parameters["restart_dir"] = str(base_mps_storage_folder)
+
     # Update bond dimension
     sweep_schedule_bond_dims = dmrg_parameters["sweep_schedule_bond_dims"]
     init_state_bond_dimension = dmrg_parameters["init_state_bond_dimension"]
@@ -44,6 +78,7 @@ def dmrg_central_loop(
 
     dmrg_parameters["sweep_schedule_bond_dims"] = sweep_schedule_bond_dims
     dmrg_parameters["init_state_bond_dimension"] = init_state_bond_dimension
+    dmrg_parameters["restart_dir"] = str(base_mps_storage_folder / "dmrg_second_calc")
 
     # Run DMRG
     dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc(
@@ -62,6 +97,34 @@ def dmrg_central_loop(
     bond_dims_used = np.hstack(
         [bond_dims_used, dmrg_parameters["sweep_schedule_bond_dims"][-1]]
     )
+
+    # Get initial_ket and ket_optimized and convert them to a representation of tensors
+    # See https://github.com/block-hczhai/block2-preview/blob/b4eb5bfe1020ffed6c5e90db444dd878052dd66d/pyblock2/algebra/core.py#L483
+    # Perhaps use a dict that has a partial view of dmrg_results and then add representation
+    dmrg_results_saveable = {}
+    for key, value in dmrg_results.items():
+        if key in ["ket_optimized", "initial_ket"]:
+            dmrg_results_saveable[key] = repr(value.tensors)
+        else:
+            dmrg_results_saveable[key] = value
+
+    hdf5_io.save_many_variables_to_hdf5(
+        hdf5_filepath=main_storage_file_path,
+        variables=dmrg_parameters,
+        access_mode="a",
+        group=f"dmrg_second_calc/dmrg_parameters",
+        overwrite=False,
+    )
+    hdf5_io.save_many_variables_to_hdf5(
+        hdf5_filepath=main_storage_file_path,
+        variables=dmrg_results_saveable,
+        access_mode="a",
+        group=f"dmrg_second_calc/dmrg_results",
+        overwrite=False,
+    )
+    del dmrg_results_saveable  # Clear memory
+    gc.collect()  # Collect garbage
+    dmrg_parameters["restart_dir"] = str(base_mps_storage_folder)
 
     energy_change = np.inf
     wall_time_loop_ns = time.perf_counter_ns() - wall_time_start_ns
@@ -91,6 +154,8 @@ def dmrg_central_loop(
             dmrg_parameters=dmrg_parameters,
             past_energies_dmrg=past_energies_dmrg,
             past_discarded_weights=past_discarded_weights,
+            loop_entry_count=loop_entry_count,
+            main_storage_file_path=main_storage_file_path,
             past_parameters=past_parameters,
             verbosity=verbosity,
         )
@@ -141,9 +206,12 @@ def dmrg_loop_function(
     dmrg_parameters: dict,
     past_energies_dmrg: np.ndarray,
     past_discarded_weights: np.ndarray,
+    loop_entry_count: int,
+    main_storage_file_path: str,
     past_parameters: np.ndarray = None,
     verbosity: int = 0,
 ):
+    base_mps_storage_folder = Path(dmrg_parameters["restart_dir"])
     # Update bond dimension
     sweep_schedule_bond_dims = dmrg_parameters["sweep_schedule_bond_dims"]
     init_state_bond_dimension = dmrg_parameters["init_state_bond_dimension"]
@@ -154,6 +222,9 @@ def dmrg_loop_function(
 
     dmrg_parameters["sweep_schedule_bond_dims"] = sweep_schedule_bond_dims
     dmrg_parameters["init_state_bond_dimension"] = init_state_bond_dimension
+    dmrg_parameters["restart_dir"] = str(
+        base_mps_storage_folder / f"dmrg_loop_{loop_entry_count:03d}"
+    )
 
     # Run DMRG
     dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc(
@@ -187,6 +258,27 @@ def dmrg_loop_function(
         fit_parameters[-1] = energy_estimated
         fit_energy_replaced_by_dmrg = True
 
+    # Get initial_ket and ket_optimized and convert them to a representation of tensors
+    # See https://github.com/block-hczhai/block2-preview/blob/b4eb5bfe1020ffed6c5e90db444dd878052dd66d/pyblock2/algebra/core.py#L483
+    # Perhaps use a dict that has a partial view of dmrg_results and then add representation
+    dmrg_results_saveable = {}
+    for key, value in dmrg_results.items():
+        if key in ["ket_optimized", "initial_ket"]:
+            continue
+            # dmrg_results_saveable[key+"_storage_folder"] = str(base_mps_storage_folder / f"dmrg_loop_{loop_entry_count:03d}")
+            # log.info(
+            #     f"Saved {key} as a representation of tensors.------------------------------------"
+            # )
+            # log.info(f"repr(value.tensors): {repr(value.tensors)}")
+            # log.info(
+            #     f"repr(value.tensors): {[repr(tensor) for tensor in value.tensors]}"
+            # )
+            # log.info(
+            #     f"repr(value.tensors): {[repr(block) for tensor in value.tensors for block in tensor.blocks]}"
+            # )
+        else:
+            dmrg_results_saveable[key] = value
+
     # Save data
     result_storage_dict = {
         "sweep_schedule_bond_dims": sweep_schedule_bond_dims,
@@ -195,10 +287,37 @@ def dmrg_loop_function(
         "fit_parameters": fit_parameters,
         "R_squared": R_squared,
         "fit_energy_replaced_by_dmrg": fit_energy_replaced_by_dmrg,
+        "ket_storage_dir": str(
+            base_mps_storage_folder / f"dmrg_loop_{loop_entry_count:03d}"
+        ),
     }
     past_energies_dmrg = energies_dmrg
     past_discarded_weights = discarded_weights
-    save_data(dmrg_results, result_storage_dict)
+
+    hdf5_io.save_many_variables_to_hdf5(
+        hdf5_filepath=main_storage_file_path,
+        variables=result_storage_dict,
+        access_mode="a",
+        group=f"dmrg_loop_{loop_entry_count:03d}/result_storage_dict",
+        overwrite=False,
+    )
+    hdf5_io.save_many_variables_to_hdf5(
+        hdf5_filepath=main_storage_file_path,
+        variables=dmrg_parameters,
+        access_mode="a",
+        group=f"dmrg_loop_{loop_entry_count:03d}/dmrg_parameters",
+        overwrite=False,
+    )
+    hdf5_io.save_many_variables_to_hdf5(
+        hdf5_filepath=main_storage_file_path,
+        variables=dmrg_results_saveable,
+        access_mode="a",
+        group=f"dmrg_loop_{loop_entry_count:03d}/dmrg_results",
+        overwrite=False,
+    )
+    del dmrg_results_saveable  # Clear memory
+    gc.collect()  # Collect garbage
+    dmrg_parameters["restart_dir"] = str(base_mps_storage_folder)
 
     # Return results
     return (
@@ -216,13 +335,14 @@ def dmrg_loop_function(
 def update_bond_dim(sweep_schedule_bond_dims, init_state_bond_dimension):
 
     # Increase by 10%
-    new_sweep_schedule_bond_dims = np.ceil(
-        np.array(sweep_schedule_bond_dims) * 1.1
-    ).astype(np.int_)
+    new_sweep_schedule_bond_dim = np.ceil(sweep_schedule_bond_dims[-1] * 1.1).astype(
+        np.int_
+    )
+    num_sweeps = len(sweep_schedule_bond_dims)
+    half_length = num_sweeps // 2
+    new_sweep_schedule_bond_dims = [new_sweep_schedule_bond_dim // 2] * half_length + [
+        new_sweep_schedule_bond_dim
+    ] * (num_sweeps - half_length)
 
     new_init_state_bond_dimension = int(np.ceil(init_state_bond_dimension * 1.1))
     return new_sweep_schedule_bond_dims, new_init_state_bond_dimension
-
-
-def save_data(dmrg_results, result_storage_dict):
-    pass

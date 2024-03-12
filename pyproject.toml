@@ -11,6 +11,7 @@ python = ">=3.9"
 block2 = "==0.5.2"
 pyscf = "^2.5.0"
 matplotlib = "^3.8.3"
+pandas = "^2.2.1"
 
 [tool.poetry.dev-dependencies]
 
