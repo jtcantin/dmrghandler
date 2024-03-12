@@ -13,7 +13,9 @@ case (HDF5)
   :Load metadata into dict;
 case (Other)
   :ERROR;
+  stop
 endswitch
-
+:Read configuration file;
+stop
 @enduml
 

@@ -1,6 +1,7 @@
 import logging
 
 log = logging.getLogger(__name__)
+from pathlib import Path
 from typing import List
 
 import matplotlib.pyplot as plt
@@ -382,7 +383,9 @@ def plot_extrapolation(
     fig.tight_layout()
 
     if plot_filename is not None:
-        fig.savefig(plot_filename + "_lnDeltaE.pdf", format="pdf", dpi=300)
+        plot_filename_path = Path(str(plot_filename) + "_lnDeltaE.pdf")
+        plot_filename_path.parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(plot_filename_path, format="pdf", dpi=300)
 
     # E_DMRG vs δϵ plot
     ################################
@@ -428,7 +431,9 @@ def plot_extrapolation(
     fig.tight_layout()
 
     if plot_filename is not None:
-        fig.savefig(plot_filename + "_EDMRG.pdf", format="pdf", dpi=300)
+        plot_filename_path = Path(str(plot_filename) + "_EDMRG.pdf")
+        plot_filename_path.parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(plot_filename_path, format="pdf", dpi=300)
 
     # E_DMRG vs 1/bond_dimension plot
     ################################
@@ -474,4 +479,6 @@ def plot_extrapolation(
     fig.tight_layout()
 
     if plot_filename is not None:
-        fig.savefig(plot_filename + "_EDMRG_bond_dims.pdf", format="pdf", dpi=300)
+        plot_filename_path = Path(str(plot_filename) + "_EDMRG_bond_dims.pdf")
+        plot_filename_path.parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(plot_filename_path, format="pdf", dpi=300)

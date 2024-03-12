@@ -1,5 +1,6 @@
 import sys
 import unittest
+from pathlib import Path
 
 import numpy as np
 import numpy.testing as npt
@@ -91,6 +92,7 @@ class TestDmrgLoopingSmallMolecule(unittest.TestCase):
             "temp_dir": "./tests/temp",
             "stack_mem": 1073741824,
             "restart_dir": "./tests/restart",
+            # "mps_storage_folder": "./tests/temp/mps_storage",
             "core_energy": nuc_rep_energy,
             "reordering_method": "none",
             "init_state_seed": 63857,  # 9844,  # 0 means random seed
@@ -114,7 +116,13 @@ class TestDmrgLoopingSmallMolecule(unittest.TestCase):
         }
 
         uuid_main_storage_file_path = hdf5_io.get_generic_filename()
-        uuid_main_storage_file_path = "tests/temp/" / uuid_main_storage_file_path
+        uuid_main_storage_folder_path = uuid_main_storage_file_path.stem
+        uuid_main_storage_folder_path = (
+            Path("tests")
+            / Path("temp2")
+            / Path(f"{molecule_name}")
+            / uuid_main_storage_folder_path
+        )
 
         loop_results = dmrg_looping.dmrg_central_loop(
             one_body_tensor=one_body_tensor,
@@ -123,7 +131,7 @@ class TestDmrgLoopingSmallMolecule(unittest.TestCase):
             max_bond_dimension=max_bond_dimension,
             max_time_limit_sec=max_time_limit_sec,
             min_energy_change_hartree=min_energy_change_hartree,
-            main_storage_file_path=uuid_main_storage_file_path,
+            main_storage_folder_path=uuid_main_storage_folder_path,
             verbosity=2,
         )
 
@@ -170,7 +178,9 @@ class TestDmrgLoopingSmallMolecule(unittest.TestCase):
             energies_dmrg=past_energies_dmrg,
             fit_parameters=fit_parameters,
             bond_dims=bond_dims_used,
-            plot_filename=f"tests/temp/energy_extrapolation_{molecule_name}",
+            plot_filename=uuid_main_storage_folder_path
+            / Path("plots")
+            / Path(f"energy_extrapolation_{molecule_name}"),
             figNum=0,
         )
 
@@ -196,7 +206,7 @@ class TestDmrgLoopingSmallMolecule(unittest.TestCase):
     def test_h2_sto6g_fci_su2(self):
 
         # Molecule Info
-        molecule_name = "H2, sto6g"
+        molecule_name = "H2,sto6g"
         basis = "sto6g"  # 4 spin orbitals
         bond_length = 1.0
         geometry = f"H 0 0 0; H 0 0 {bond_length}"
@@ -240,7 +250,7 @@ class TestDmrgLoopingSmallMolecule(unittest.TestCase):
     def test_beh2_sto3g_fci_su2(self):
 
         # Molecule Info
-        molecule_name = "BeH2, sto3g"
+        molecule_name = "BeH2,sto3g"
         basis = "sto3g"  # 4 spin orbitals
         bond_length = 1.0
         geometry = f"Be 0 0 0; H 0 0 {bond_length}; H 0 0 -{bond_length}"
@@ -284,7 +294,7 @@ class TestDmrgLoopingSmallMolecule(unittest.TestCase):
     def test_hneg_aug_cc_pVDZ_fci_su2(self):
 
         # Molecule Info
-        molecule_name = "H-, aug-cc-pVDZ"
+        molecule_name = "H-,aug-cc-pVDZ"
         basis = "aug-cc-pVDZ"  # 4 spin orbitals
         # bond_length = 1.0
         geometry = f"H 0 0 0"

@@ -157,28 +157,28 @@ def save_many_variables_to_hdf5(
         else:
             output_object = hdf5_output_file.require_group(group)
 
-            for variable_name, variable_value in variables.items():
-                try:
-                    if variable_value is None:
-                        continue
-                    # print(variable_name)
-                    if variable_name in output_object.keys() and not overwrite:
-                        raise ValueError(
-                            f"Variable {variable_name} already exists in HDF5 file {hdf5_filepath}."
-                        )
-                    elif variable_name in output_object.keys() and overwrite:
-                        del output_object[variable_name]
-                    if isinstance(variable_value, pd.DataFrame):
-                        pandas_dict[variable_name] = variable_value
-
-                    else:
-                        # print(variable_value)
-                        output_object.create_dataset(variable_name, data=variable_value)
-                except TypeError:
-                    log.error(
-                        f"Error saving variables to HDF5 file. Couldn't save {variable_name} in group {group}."
+        for variable_name, variable_value in variables.items():
+            try:
+                if variable_value is None:
+                    continue
+                # print(variable_name)
+                if variable_name in output_object.keys() and not overwrite:
+                    raise ValueError(
+                        f"Variable {variable_name} already exists in HDF5 file {hdf5_filepath}."
                     )
-                    raise
+                elif variable_name in output_object.keys() and overwrite:
+                    del output_object[variable_name]
+                if isinstance(variable_value, pd.DataFrame):
+                    pandas_dict[variable_name] = variable_value
+
+                else:
+                    # print(variable_value)
+                    output_object.create_dataset(variable_name, data=variable_value)
+            except TypeError:
+                log.error(
+                    f"Error saving variables to HDF5 file. Couldn't save {variable_name} in group {group}."
+                )
+                raise
 
     if len(pandas_dict.keys()) > 0:
         for variable_name, variable_value in pandas_dict.items():
