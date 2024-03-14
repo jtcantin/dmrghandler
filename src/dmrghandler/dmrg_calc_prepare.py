@@ -144,6 +144,13 @@ def load_tensors(data_file_path):
             f"Data file format not recognized. File path: {data_file_path}"
         )
 
+        # Check for required symmetries
+    perm_symm_check_passed = check_permutation_symmetries_complex_orbitals(
+        one_body_tensor, two_body_tensor
+    )
+    if not perm_symm_check_passed:
+        raise ValueError("Permutation symmetry checks failed.")
+
     return (
         one_body_tensor,
         two_body_tensor,
@@ -174,12 +181,11 @@ def load_tensors_from_hdf5(data_file_path, avas_threshold=0.2):
             "------------------------------------------------------------------------------------------"
         )
         log.debug(
-            "Spin-symmetry-broken system.\n"
+            "The below should be equal.\n"
             + f"two_body_tensor[0,0,0,0]: {two_body_tensor[0,0,0,0]}\n"
             + f"two_body_tensor[1,1,1,1]: {two_body_tensor[1,1,1,1]}\n"
-            + f"two_body_tensor[0,0,1,1]: {two_body_tensor[0,0,1,1]}\n"
-            + f"two_body_tensor[1,1,0,0]: {two_body_tensor[1,1,0,0]}\n"
-            "Switching to Sz format."
+            + f"two_body_tensor[0,0,1,1]: {two_body_tensor[0,1,1,0]}\n"
+            + f"two_body_tensor[1,1,0,0]: {two_body_tensor[1,0,0,1]}\n"
         )
         log.debug(
             "------------------------------------------------------------------------------------------"
@@ -201,10 +207,10 @@ def load_tensors_from_hdf5(data_file_path, avas_threshold=0.2):
     num_orbitals_whole_molecule = int(attributes["nqubits"] // 2)
     num_spin_orbitals_whole_molecule = int(attributes["nqubits"])
     charge = int(attributes["charge"])
-    multiplicity = float(attributes["multiplicity"])
+    multiplicity = int(attributes["multiplicity"])
     basis_whole_molecule = attributes["basis"]
     geometry_whole_molecule = attributes["geometry"]
-    two_S = multiplicity - 1
+    two_S = int(multiplicity - 1)
 
     geometry_whole_molecule = standardize_geometry(geometry_whole_molecule)
 
@@ -261,6 +267,8 @@ def load_tensors_from_hdf5(data_file_path, avas_threshold=0.2):
     all_attributes = attributes
     # mean_field_object_from_fcidump = attributes["mean_field_object_from_fcidump"]
 
+    two_body_tensor = interaction_operator_order_to_chemist_order(two_body_tensor)
+
     one_body_tensor, two_body_tensor, spin_symm_broken = spinorbitals_to_orbitals(
         one_body_tensor, two_body_tensor
     )
@@ -283,11 +291,11 @@ def load_tensors_from_fcidump(data_file_path):
     fci_data = pyscf.tools.fcidump.read(data_file_path)
 
     # dict_keys(['NORB', 'NELEC', 'MS2', 'ORBSYM', 'ISYM', 'ECORE', 'H1', 'H2'])
-    num_orbitals = fci_data["NORB"]
+    num_orbitals = int(fci_data["NORB"])
     num_spin_orbitals = 2 * num_orbitals
-    num_electrons = fci_data["NELEC"]
-    two_S = fci_data["MS2"]
-    two_Sz = fci_data["MS2"]
+    num_electrons = int(fci_data["NELEC"])
+    two_S = int(fci_data["MS2"])
+    two_Sz = int(fci_data["MS2"])
     orb_sym = fci_data["ORBSYM"]
     nuc_rep_energy = fci_data["ECORE"]
     one_body_tensor = fci_data["H1"]
@@ -330,86 +338,31 @@ def spinorbitals_to_orbitals(one_body_tensor, two_body_tensor):
     two_body_tensor_orbitals = np.zeros(
         (num_orbitals, num_orbitals, num_orbitals, num_orbitals)
     )
-    spin_symm_broken = False
-    for piter in range(num_orbitals):
-        if spin_symm_broken:
-            break
-        for qiter in range(num_orbitals):
-            if spin_symm_broken:
-                break
+    perm_symm_check_passed = check_permutation_symmetries_complex_orbitals(
+        one_body_tensor, two_body_tensor
+    )
+    if not perm_symm_check_passed:
+        raise ValueError("Permutation symmetry checks failed.")
 
-            if (
-                one_body_tensor[2 * piter, 2 * qiter]
-                == one_body_tensor[2 * piter + 1, 2 * qiter + 1]
-            ):
+    spin_symm_check_passed = check_spin_symmetry(one_body_tensor, two_body_tensor)
+    if not spin_symm_check_passed:
+        log.warning("Spin symmetry checks failed.")
+        log.warning("Switching to Sz format.")
+
+    if spin_symm_check_passed:
+        for piter in range(num_orbitals):
+            for qiter in range(num_orbitals):
                 one_body_tensor_orbitals[piter, qiter] = one_body_tensor[
                     2 * piter, 2 * qiter
                 ]
-            else:
-                # raise NotImplementedError(
-                #     "Spin-symmetry-broken systems not yet implemented.\n"
-                #     + f"one_body_tensor[{2 * piter, 2 * qiter}]: {one_body_tensor[2 * piter, 2 * qiter]}\n"
-                #     + f"one_body_tensor[{2 * piter + 1, 2 * qiter + 1}]: {one_body_tensor[2 * piter + 1, 2 * qiter + 1]}"
-                # )
-                log.warning(
-                    "Spin-symmetry-broken systems not yet implemented.\n"
-                    + f"one_body_tensor[{2 * piter, 2 * qiter}]: {one_body_tensor[2 * piter, 2 * qiter]}\n"
-                    + f"one_body_tensor[{2 * piter + 1, 2 * qiter + 1}]: {one_body_tensor[2 * piter + 1, 2 * qiter + 1]}\n"
-                    "Switching to Sz format."
-                )
-                spin_symm_broken = True
-                break
-            for riter in range(num_orbitals):
-                if spin_symm_broken:
-                    break
-                for siter in range(num_orbitals):
-
-                    if (
-                        np.allclose(
-                            two_body_tensor[2 * piter, 2 * qiter, 2 * riter, 2 * siter],
-                            two_body_tensor[
-                                2 * piter + 1, 2 * qiter + 1, 2 * riter, 2 * siter
-                            ],
-                        )
-                        and np.allclose(
-                            two_body_tensor[2 * piter, 2 * qiter, 2 * riter, 2 * siter],
-                            two_body_tensor[
-                                2 * piter, 2 * qiter, 2 * riter + 1, 2 * siter + 1
-                            ],
-                        )
-                        and np.allclose(
-                            two_body_tensor[2 * piter, 2 * qiter, 2 * riter, 2 * siter],
-                            two_body_tensor[
-                                2 * piter + 1,
-                                2 * qiter + 1,
-                                2 * riter + 1,
-                                2 * siter + 1,
-                            ],
-                        )
-                    ):
+                for riter in range(num_orbitals):
+                    for siter in range(num_orbitals):
                         two_body_tensor_orbitals[piter, qiter, riter, siter] = (
                             two_body_tensor[2 * piter, 2 * qiter, 2 * riter, 2 * siter]
                         )
-                    else:
-                        # raise NotImplementedError(
-                        #     "Spin-symmetry-broken systems not yet implemented.\n"
-                        #     + f"two_body_tensor[{2 * piter, 2 * qiter, 2 * riter, 2 * siter}]: {two_body_tensor[2 * piter, 2 * qiter, 2 * riter, 2 * siter]}\n"
-                        #     + f"two_body_tensor[{2 * piter + 1, 2 * qiter + 1, 2 * riter, 2 * siter}]: {two_body_tensor[2 * piter + 1, 2 * qiter + 1, 2 * riter, 2 * siter]}\n"
-                        #     + f"two_body_tensor[{2 * piter, 2 * qiter, 2 * riter + 1, 2 * siter + 1}]: {two_body_tensor[2 * piter, 2 * qiter, 2 * riter + 1, 2 * siter + 1]}\n"
-                        #     + f"two_body_tensor[{2 * piter + 1, 2 * qiter + 1, 2 * riter + 1, 2 * siter + 1}]: {two_body_tensor[2 * piter + 1, 2 * qiter + 1, 2 * riter + 1, 2 * siter + 1]}"
-                        # )
-                        log.warning(
-                            "Spin-symmetry-broken system.\n"
-                            + f"two_body_tensor[{2 * piter, 2 * qiter, 2 * riter, 2 * siter}]: {two_body_tensor[2 * piter, 2 * qiter, 2 * riter, 2 * siter]}\n"
-                            + f"two_body_tensor[{2 * piter + 1, 2 * qiter + 1, 2 * riter, 2 * siter}]: {two_body_tensor[2 * piter + 1, 2 * qiter + 1, 2 * riter, 2 * siter]}\n"
-                            + f"two_body_tensor[{2 * piter, 2 * qiter, 2 * riter + 1, 2 * siter + 1}]: {two_body_tensor[2 * piter, 2 * qiter, 2 * riter + 1, 2 * siter + 1]}\n"
-                            + f"two_body_tensor[{2 * piter + 1, 2 * qiter + 1, 2 * riter + 1, 2 * siter + 1}]: {two_body_tensor[2 * piter + 1, 2 * qiter + 1, 2 * riter + 1, 2 * siter + 1]}\n"
-                            "Switching to Sz format."
-                        )
-                        spin_symm_broken = True
-                        break
-
-    if spin_symm_broken:
+        new_one_body_tensor = one_body_tensor_orbitals
+        new_two_body_tensor = two_body_tensor_orbitals
+    else:
         # Put into format for Block2 Sz
         # See https://block2.readthedocs.io/en/latest/api/pyblock2.html#pyblock2.driver.core.DMRGDriver.get_qc_mpo
         one_body_tensor_alpha = np.zeros((num_orbitals, num_orbitals))
@@ -455,8 +408,196 @@ def spinorbitals_to_orbitals(one_body_tensor, two_body_tensor):
             two_body_tensor_orbitals_aabb,
             two_body_tensor_orbitals_bbbb,
         )
-    else:
-        new_one_body_tensor = one_body_tensor_orbitals
-        new_two_body_tensor = two_body_tensor_orbitals
-
+    spin_symm_broken = not spin_symm_check_passed
     return new_one_body_tensor, new_two_body_tensor, spin_symm_broken
+
+
+def check_permutation_symmetries_complex_orbitals(one_body_tensor, two_body_tensor):
+    # Works for both spin-orbital and orbital tensors
+    symm_check_passed = True
+    num_orbitals = one_body_tensor.shape[0]
+    for p in range(num_orbitals):
+        for q in range(num_orbitals):
+            if not np.allclose(one_body_tensor[p, q], (one_body_tensor[q, p]).conj()):
+                symm_check_passed = False
+                log.warning(
+                    f"one_body_tensor[{p}, {q}] != one_body_tensor[{q}, {p}].conj(): {one_body_tensor[p, q]} != {(one_body_tensor[q, p]).conj()}"
+                )
+
+            for r in range(num_orbitals):
+                for s in range(num_orbitals):
+                    if (
+                        not np.allclose(
+                            two_body_tensor[p, q, r, s], two_body_tensor[r, s, p, q]
+                        )
+                        or not np.allclose(
+                            two_body_tensor[p, q, r, s],
+                            two_body_tensor[q, p, s, r].conj(),
+                        )
+                        or not np.allclose(
+                            two_body_tensor[p, q, r, s],
+                            two_body_tensor[s, r, q, p].conj(),
+                        )
+                    ):
+                        symm_check_passed = False
+
+                        log.warning(
+                            f"Permutation check of two body tensor failed.\n"
+                            + f"two_body_tensor[{p},{q},{r},{s}] = {two_body_tensor[p,q,r,s]}\n"
+                            + f"two_body_tensor[{r},{s},{p},{q}] = {two_body_tensor[r,s,p,q]}\n"
+                            # + f"two_body_tensor[{q},{p},{r},{s}] = {two_body_tensor[q,p,r,s]}\n"
+                            # + f"two_body_tensor[{p},{q},{s},{r}] = {two_body_tensor[p,q,s,r]}\n"
+                            + f"two_body_tensor[{q},{p},{s},{r}] = {two_body_tensor[q,p,s,r]}\n"
+                            # + f"two_body_tensor[{r},{s},{q},{p}] = {two_body_tensor[r,s,q,p]}\n"
+                            # + f"two_body_tensor[{s},{r},{p},{q}] = {two_body_tensor[s,r,p,q]}\n"
+                            + f"two_body_tensor[{s},{r},{q},{p}] = {two_body_tensor[s,r,q,p]}\n"
+                        )
+    return symm_check_passed
+
+
+def check_permutation_symmetries_real_orbitals(one_body_tensor, two_body_tensor):
+    # Works for both spin-orbital and orbital tensors
+    # The symmetries tested here are valid only if the underlying ORBITALS (or SPIN-ORBITALS) are real,
+    # NOT if the one_body_tensor and two_body_tensor elements are real.
+    # The orbitals can be complex, while the elements of the one_body_tensor and two_body_tensor are still real.
+
+    symm_check_passed = True
+    num_orbitals = one_body_tensor.shape[0]
+    for p in range(num_orbitals):
+        for q in range(num_orbitals):
+            if not np.allclose(one_body_tensor[p, q], one_body_tensor[q, p]):
+                symm_check_passed = False
+                log.warning(
+                    f"one_body_tensor[{p}, {q}] != one_body_tensor[{q}, {p}]: {one_body_tensor[p, q]} != {one_body_tensor[q, p]}"
+                )
+
+            for r in range(num_orbitals):
+                for s in range(num_orbitals):
+                    if (
+                        not np.allclose(
+                            two_body_tensor[p, q, r, s], two_body_tensor[r, s, p, q]
+                        )
+                        or not np.allclose(
+                            two_body_tensor[p, q, r, s], two_body_tensor[q, p, r, s]
+                        )
+                        or not np.allclose(
+                            two_body_tensor[p, q, r, s], two_body_tensor[p, q, s, r]
+                        )
+                        or not np.allclose(
+                            two_body_tensor[p, q, r, s], two_body_tensor[q, p, s, r]
+                        )
+                        or not np.allclose(
+                            two_body_tensor[p, q, r, s], two_body_tensor[r, s, q, p]
+                        )
+                        or not np.allclose(
+                            two_body_tensor[p, q, r, s], two_body_tensor[s, r, p, q]
+                        )
+                        or not np.allclose(
+                            two_body_tensor[p, q, r, s], two_body_tensor[s, r, q, p]
+                        )
+                    ):
+                        symm_check_passed = False
+
+                        log.warning(
+                            f"Permutation check of two body tensor failed.\n"
+                            + f"two_body_tensor[{p},{q},{r},{s}] = {two_body_tensor[p,q,r,s]}\n"
+                            + f"two_body_tensor[{r},{s},{p},{q}] = {two_body_tensor[r,s,p,q]}\n"
+                            + f"two_body_tensor[{q},{p},{r},{s}] = {two_body_tensor[q,p,r,s]}\n"
+                            + f"two_body_tensor[{p},{q},{s},{r}] = {two_body_tensor[p,q,s,r]}\n"
+                            + f"two_body_tensor[{q},{p},{s},{r}] = {two_body_tensor[q,p,s,r]}\n"
+                            + f"two_body_tensor[{r},{s},{q},{p}] = {two_body_tensor[r,s,q,p]}\n"
+                            + f"two_body_tensor[{s},{r},{p},{q}] = {two_body_tensor[s,r,p,q]}\n"
+                            + f"two_body_tensor[{s},{r},{q},{p}] = {two_body_tensor[s,r,q,p]}\n"
+                        )
+    return symm_check_passed
+
+
+def check_spin_symmetry(one_body_tensor, two_body_tensor):
+    num_spin_orbitals = one_body_tensor.shape[0]
+    num_orbitals = num_spin_orbitals // 2
+    symm_check_passed = True
+
+    for piter in range(num_orbitals):
+        for qiter in range(num_orbitals):
+            if not (
+                np.allclose(
+                    one_body_tensor[2 * piter, 2 * qiter],
+                    one_body_tensor[2 * piter + 1, 2 * qiter + 1],
+                )
+            ):
+                symm_check_passed = False
+            for riter in range(num_orbitals):
+                for siter in range(num_orbitals):
+
+                    if not (
+                        np.allclose(
+                            two_body_tensor[2 * piter, 2 * qiter, 2 * riter, 2 * siter],
+                            two_body_tensor[
+                                2 * piter + 1, 2 * qiter + 1, 2 * riter, 2 * siter
+                            ],
+                        )
+                        or not np.allclose(
+                            two_body_tensor[2 * piter, 2 * qiter, 2 * riter, 2 * siter],
+                            two_body_tensor[
+                                2 * piter, 2 * qiter, 2 * riter + 1, 2 * siter + 1
+                            ],
+                        )
+                        or not np.allclose(
+                            two_body_tensor[2 * piter, 2 * qiter, 2 * riter, 2 * siter],
+                            two_body_tensor[
+                                2 * piter + 1,
+                                2 * qiter + 1,
+                                2 * riter + 1,
+                                2 * siter + 1,
+                            ],
+                        )
+                    ):
+                        symm_check_passed = False
+
+    return symm_check_passed
+
+
+def interaction_operator_order_to_chemist_order(two_body_tensor):
+    # Change from interaction operator ordering to chemist ordering
+    # See interaction operator ordering here: https://quantumai.google/reference/python/openfermion/ops/InteractionOperator
+    two_body_tensor = np.einsum("psqr->pqrs", two_body_tensor)
+
+    # # Symmetrize; the interaction operator format only includes pqsr <-> srpq symmetry, so add the rest.
+    # for p in range(two_body_tensor.shape[0]):
+    #     for q in range(two_body_tensor.shape[0]):
+    #         for r in range(two_body_tensor.shape[0]):
+    #             for s in range(two_body_tensor.shape[0]):
+    #                 pqrs_zero = np.allclose(two_body_tensor[p, q, r, s], 0.0)
+    #                 qprs_zero = np.allclose(two_body_tensor[q, p, r, s], 0.0)
+    #                 if (pqrs_zero and qprs_zero) or np.allclose(
+    #                     two_body_tensor[p, q, r, s], two_body_tensor[q, p, r, s]
+    #                 ):
+    #                     continue
+    #                 elif pqrs_zero:
+    #                     val_to_copy = two_body_tensor[q, p, r, s]
+    #                     two_body_tensor[p, q, r, s] = val_to_copy
+    #                     two_body_tensor[r, s, p, q] = val_to_copy
+    #                     two_body_tensor[q, p, s, r] = val_to_copy
+    #                     two_body_tensor[s, r, q, p] = val_to_copy
+
+    #                 elif qprs_zero:
+    #                     val_to_copy = two_body_tensor[p, q, r, s]
+    #                     two_body_tensor[q, p, r, s] = val_to_copy
+    #                     two_body_tensor[p, q, s, r] = val_to_copy
+    #                     two_body_tensor[r, s, q, p] = val_to_copy
+    #                     two_body_tensor[s, r, p, q] = val_to_copy
+    #                 else:
+    #                     log.error(
+    #                         f"Unexpected tensor structure.\n"
+    #                         + f"two_body_tensor[{p},{q},{r},{s}] = {two_body_tensor[p,q,r,s]}\n"
+    #                         + f"two_body_tensor[{r},{s},{p},{q}] = {two_body_tensor[r,s,p,q]}\n"
+    #                         + f"two_body_tensor[{q},{p},{r},{s}] = {two_body_tensor[q,p,r,s]}\n"
+    #                         + f"two_body_tensor[{p},{q},{s},{r}] = {two_body_tensor[p,q,s,r]}\n"
+    #                         + f"two_body_tensor[{q},{p},{s},{r}] = {two_body_tensor[q,p,s,r]}\n"
+    #                         + f"two_body_tensor[{r},{s},{q},{p}] = {two_body_tensor[r,s,q,p]}\n"
+    #                         + f"two_body_tensor[{s},{r},{p},{q}] = {two_body_tensor[s,r,p,q]}\n"
+    #                         + f"two_body_tensor[{s},{r},{q},{p}] = {two_body_tensor[s,r,q,p]}\n"
+    #                     )
+    #                     raise ValueError("Unexpected tensor structure.")
+
+    return two_body_tensor

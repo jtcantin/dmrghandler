@@ -263,6 +263,9 @@ def single_qchem_dmrg_calc(
 
     ket_optimized = driver.copy_mps(initial_ket, tag="ket_optimized")
     log.debug(f"LINE {inspect.getframeinfo(inspect.currentframe()).lineno}")
+    log.debug(f"sweep_schedule_bond_dims: {sweep_schedule_bond_dims}")
+    log.debug(f"sweep_schedule_noise: {sweep_schedule_noise}")
+    log.debug(f"sweep_schedule_davidson_threshold: {sweep_schedule_davidson_threshold}")
     dmrg_ground_state_energy = driver.dmrg(
         mpo=qchem_hami_mpo,
         ket=ket_optimized,

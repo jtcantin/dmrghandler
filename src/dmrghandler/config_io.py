@@ -214,12 +214,13 @@ def gen_config_files(
         energy_convergence_threshold = common_or_list(
             config_dict["energy_convergence_threshold_list"], data_iter
         )
-        sweep_schedule_bond_dims = [
-            [np.max([1, starting_bond_dimension // factor])] * count
-            for factor, count in common_or_list(
+        sweep_schedule_bond_dims = generate_sweep_schedule(
+            common_or_list(
                 config_dict["sweep_schedule_bond_dims_parameters"], data_iter
-            )
-        ]
+            ),
+            starting_bond_dimension,
+        )
+
         sweep_schedule_noise = common_or_list(
             config_dict["sweep_schedule_noise_list"], data_iter
         )
@@ -292,3 +293,12 @@ def common_or_list(list, iiter):
         return list[0]
     else:
         return list[iiter]
+
+
+def generate_sweep_schedule(factor_count_tuples, starting_bond_dimension):
+    sweep_schedule_bond_dims = []
+    for factor, count in factor_count_tuples:
+        new_sector = [np.max([1, starting_bond_dimension // factor])] * count
+        sweep_schedule_bond_dims = sweep_schedule_bond_dims + new_sector
+
+    return sweep_schedule_bond_dims
