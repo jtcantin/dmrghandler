@@ -156,3 +156,5 @@ tests/temp/*
 tests/restart/*
 ferm_utils.py
 tests/temp2/*
+data_for_testing/*
+config_store/*

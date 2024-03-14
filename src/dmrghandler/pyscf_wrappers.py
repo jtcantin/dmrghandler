@@ -15,6 +15,11 @@ def get_pyscf_mol(basis, geometry, num_unpaired_electrons, charge, multiplicity)
     mol.spin = num_unpaired_electrons
     mol.charge = charge
     mol.multiplicity = multiplicity
+    log.debug(f"basis: {basis}")
+    log.debug(f"geometry: {geometry}")
+    log.debug(f"num_unpaired_electrons: {num_unpaired_electrons}")
+    log.debug(f"charge: {charge}")
+    log.debug(f"multiplicity: {multiplicity}")
     mol.build()
 
     return mol
