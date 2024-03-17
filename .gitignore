@@ -159,3 +159,7 @@ tests/temp2/*
 data_for_testing/*
 config_store/*
 data_storage/*
+submit_script_examples/*
+submit_script_examples.tar.gz
+prepare_calcs.py
+dmrg_single_loop_run.py

@@ -108,7 +108,7 @@ class TestDmrgSinglePythonRun(unittest.TestCase):
             "n_mkl_threads_list": [1],
         }
 
-        config_files_list = config_io.gen_config_files(
+        config_files_list, config_dict_single_file_list = config_io.gen_config_files(
             data_file_list=data_file_list,
             config_dict=config_dict,
             dmrg_advanced_config=None,
@@ -120,6 +120,9 @@ class TestDmrgSinglePythonRun(unittest.TestCase):
         # file_object_faulter = open("segfault.log", "w")
         # faulthandler.enable(file=file_object_faulter)
         config_files_list = self.gen_files_prep()
+
+        log.debug(f"config_files_list: {config_files_list}")
+
         for config_file in config_files_list:
             (
                 one_body_tensor,

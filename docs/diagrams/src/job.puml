@@ -1,0 +1,15 @@
+@startuml single_job
+start
+:Fill config dictionary;
+:Fill sumibt_dict;
+:generate config files;
+:generate submit files;
+partition #lightGreen "DMRG_loop_run.py [config_file]"
+:dmrg_calc_prepare.prepare_calc(config_file);
+:dmrg_looping.dmrg_central_loop;
+:energy_extrapolation.dmrg_energy_extrapolation;
+:energy_extrapolation.plot_extrapolation;
+end group
+:provide list of submit commands;
+stop
+@enduml

@@ -1,4 +1,5 @@
 import logging
+import shutil
 from pathlib import Path
 
 import numpy as np
@@ -84,6 +85,8 @@ def save_dmrg_configuration_data(config_file: str, data: dict):
             "data_file_path",
             "main_storage_folder_path",
             "plot_filename_prefix",
+            "original_data_file_path",
+            "submit_script_file",
         ],
     )
     # Looping parameters
@@ -171,7 +174,7 @@ def gen_config_files(
             "initial_sweep_direction": None,  # Default is None, True means forward sweep (left-to-right)
             "stack_mem": 1073741824,
         }
-
+    config_dict_single_file_list = []
     for data_iter, data_file_path in enumerate(data_file_list):
         folder_uuid = hdf5_io.generate_uuid()
         plot_filename_prefix = common_or_list(
@@ -181,10 +184,32 @@ def gen_config_files(
         main_storage_folder_path = (
             Path(config_dict["main_storage_folder_path_prefix"]) / folder_uuid
         )
+        config_storage_folder = Path(config_storage_folder)
+
+        config_storage_folder.mkdir(parents=True, exist_ok=True)
+
+        data_prep_path = config_storage_folder / folder_uuid
+        # Copy datafile to data_prep_path folder
+        data_file_path = Path(data_file_path)
+        data_prep_path.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(data_file_path, data_prep_path / data_file_path.name)
+
+        config_file = data_prep_path / Path(
+            config_file_prefix + f"{str(data_iter)}_" + str(folder_uuid) + ".yaml"
+        )
+
+        log.info(f"Copied data file {data_file_path} to {data_prep_path}")
+
         data_config = {
-            "data_file_path": str(data_file_path),
+            "original_data_file_path": str(data_file_path),
+            "data_file_path": str(data_prep_path / data_file_path.name),
             "main_storage_folder_path": str(main_storage_folder_path),
             "plot_filename_prefix": str(plot_filename_prefix),
+            "data_prep_path": str(data_prep_path),
+            "python_run_file": str(data_prep_path / f"dmrg_loop_run_{folder_uuid}.py"),
+            "submit_script_file": str(data_prep_path / f"submit_{folder_uuid}.sh"),
+            "config_file": str(config_file),
+            "folder_uuid": str(folder_uuid),
         }
 
         max_bond_dimension = common_or_list(
@@ -275,17 +300,15 @@ def gen_config_files(
             "dmrg_basic_config": dmrg_basic_config,
             "dmrg_advanced_config": dmrg_advanced_config,
         }
-        config_storage_folder = Path(config_storage_folder)
-        config_storage_folder.mkdir(parents=True, exist_ok=True)
-        config_file = config_storage_folder / Path(
-            config_file_prefix + str(data_iter) + str(folder_uuid) + ".yaml"
-        )
+
         save_dmrg_configuration_data(
             config_file=config_file, data=config_dict_single_file
         )
         log.info(f"Saved configuration file {config_file}")
         config_files_list.append(config_file)
-    return config_files_list
+        config_dict_single_file_list.append(config_dict_single_file)
+
+    return config_files_list, config_dict_single_file_list
 
 
 def common_or_list(list, iiter):
