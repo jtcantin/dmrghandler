@@ -6,6 +6,10 @@ log = logging.getLogger(__name__)
 import numpy as np
 import pyscf
 import pyscf.fci
+import pyscf.mcscf
+from openfermion.resource_estimates.molecule.pyscf_utils import (
+    cas_to_pyscf as of_cas_to_pyscf,
+)
 
 
 def get_pyscf_mol(basis, geometry, num_unpaired_electrons, charge, multiplicity):
@@ -110,3 +114,23 @@ def two_body_tensor_orbital_to_spin_orbital(two_body_tensor):
                         2 * piter + 1, 2 * qiter + 1, 2 * riter, 2 * siter
                     ] = two_body_tensor[piter, qiter, riter, siter]
     return two_body_tensor_spin_orbital
+
+
+def pyscf_fcidump_fci(fci_data):
+    """Using code from 04_load_fcidump.ipynb in Zapata's Chemsitry benchmark:
+    https://zapco.sharepoint.com/:f:/r/sites/ZapataExternalDocs/Shared%20Documents/DARPA/TA1_Hamiltonians?csf=1&web=1&e=TPZLMw
+    """
+    eri = pyscf.ao2mo.restore("s1", fci_data["H2"], fci_data["NORB"])
+
+    n_alpha = (fci_data["NELEC"] + fci_data["MS2"]) // 2
+    n_beta = (fci_data["NELEC"] - fci_data["MS2"]) // 2
+    pyscf_mol, pyscf_mf = of_cas_to_pyscf(
+        h1=fci_data["H1"],
+        eri=eri,
+        ecore=fci_data["ECORE"],
+        num_alpha=n_alpha,
+        num_beta=n_beta,
+    )
+
+    fci = pyscf.mcscf.CASCI(pyscf_mf, ncas=fci_data["NORB"], nelecas=fci_data["NELEC"])
+    return fci.kernel()

@@ -1,9 +1,11 @@
+import faulthandler
 import sys
 import unittest
 from pathlib import Path
 
 import numpy as np
 import numpy.testing as npt
+import pyscf
 
 import dmrghandler.config_io as config_io
 import dmrghandler.dmrg_calc_prepare as dmrg_calc_prepare
@@ -47,28 +49,47 @@ log = logger
 class TestDmrgSinglePythonRun(unittest.TestCase):
     def gen_files_prep(self):
         data_file_list = [
-            # "data_for_testing/1.0_BeH2_cc-pvtz_c8ad7a19-f5e7-44aa-bf38-8db419cb1031.hdf5",
-            # "data_for_testing/1.0_CH2_cc-pvdz_6_444895b0-6b73-4273-b7d7-579908f09c30.hdf5",
-            "data_for_testing/fcidump.2_co2_6-311++G__",
-            # "data_for_testing/fcidump.36_1ru_II_2pl_{'default' _ '6-31+G(d,p)', 'Ru' _ 'lanl2tz' }",
-            # "data_for_testing/fcidump.32_2ru_III_3pl_{'default' _ '6-31+G(d,p)', 'Ru' _ 'lanl2tz' }",
-            # "data_for_testing/fcidump.34_3ruo_IV_2pl_{'Ru' _ 'lanl2tz', 'default' _ '6-31+G(d,p)'}",
-            # "data_for_testing/fcidump.36_1ru_II_2pl_{'default' _ '6-31+G(d,p)', 'Ru' _ 'lanl2tz' }",
+            ## "data_for_testing/1.0_BeH2_cc-pvtz_c8ad7a19-f5e7-44aa-bf38-8db419cb1031.hdf5",
+            ## "data_for_testing/1.0_CH2_cc-pvdz_6_444895b0-6b73-4273-b7d7-579908f09c30.hdf5",
+            "data_for_testing/fcidump.2_co2_6-311++G__",  # Passes, gets FCI answer
+            "data_for_testing/fcidump.36_1ru_II_2pl_{'default' _ '6-31+G(d,p)', 'Ru' _ 'lanl2tz' }",  # Passes, gets FCI answer
+            "data_for_testing/fcidump.34_3ruo_IV_2pl_{'Ru' _ 'lanl2tz', 'default' _ '6-31+G(d,p)'}",  # Passes, gets FCI answer
+            "data_for_testing/fcidump.36_1ru_II_2pl_{'default' _ '6-31+G(d,p)', 'Ru' _ 'lanl2tz' }",  # Passes, gets FCI answer
+            # "data_for_testing/fcidump.32_2ru_III_3pl_{'default' _ '6-31+G(d,p)', 'Ru' _ 'lanl2tz' }",  # SIGFPE, (a segfault)
+            # SIGFPE stack trace below; error appears in pyblock2/driver/core.py, line 2836 in dmrg:
+            # Either it is pyblock2 that has the problem, or the problem is in the input data
+            # """Fatal Python error: Floating point exception
+            #     Current thread 0x00007fba606d0740 (most recent call first):
+            #     File "/home/jtcantin/utoronto/dmrg_calc_handler_dev/dmrghandler/env_dmrghandler/lib/python3.9/site-packages/pyblock2/driver/core.py", line 2836 in dmrg
+            #     File "/home/jtcantin/utoronto/dmrg_calc_handler_dev/dmrghandler/src/dmrghandler/qchem_dmrg_calc.py", line 269 in single_qchem_dmrg_calc
+            #     File "/home/jtcantin/utoronto/dmrg_calc_handler_dev/dmrghandler/src/dmrghandler/dmrg_looping.py", line 62 in dmrg_central_loop
+            #     File "/home/jtcantin/utoronto/dmrg_calc_handler_dev/dmrghandler/tests/test_single_python_run.py", line 130 in test_single_python_runs
+            #     File "/home/jtcantin/.pyenv/versions/3.9.17/lib/python3.9/unittest/case.py", line 550 in _callTestMethod
+            #     File "/home/jtcantin/.pyenv/versions/3.9.17/lib/python3.9/unittest/case.py", line 592 in run
+            #     File "/home/jtcantin/.pyenv/versions/3.9.17/lib/python3.9/unittest/case.py", line 651 in __call__
+            #     File "/home/jtcantin/.pyenv/versions/3.9.17/lib/python3.9/unittest/suite.py", line 122 in run
+            #     File "/home/jtcantin/.pyenv/versions/3.9.17/lib/python3.9/unittest/suite.py", line 84 in __call__
+            #     File "/home/jtcantin/.pyenv/versions/3.9.17/lib/python3.9/unittest/suite.py", line 122 in run
+            #     File "/home/jtcantin/.pyenv/versions/3.9.17/lib/python3.9/unittest/suite.py", line 84 in __call__
+            #     File "/home/jtcantin/.pyenv/versions/3.9.17/lib/python3.9/unittest/runner.py", line 184 in run
+            #     File "/home/jtcantin/.vscode-server/extensions/ms-python.python-2024.2.1/pythonFiles/unittestadapter/execution.py", line 211 in run_tests
+            #     File "/home/jtcantin/.vscode-server/extensions/ms-python.python-2024.2.1/pythonFiles/unittestadapter/execution.py", line 341 in <module>
+            #     """,
         ]
         config_dict = {
             "plot_filename_prefix_list": [
                 "2_co2",
                 "36_1ru_II",
-                "32_2ru_III",
+                # "32_2ru_III",
                 "34_3ruo_IV",
                 "36_1ru_II",
             ],
             "main_storage_folder_path_prefix": "./data_storage",
-            "max_bond_dimension_list": [100],
+            "max_bond_dimension_list": [100, 100, 100, 100],
             "max_time_limit_sec_list": [20],
             "min_energy_change_hartree_list": [1e-4],
             "extrapolation_type_list": ["discard_weights"],
-            "starting_bond_dimension_list": [3],
+            "starting_bond_dimension_list": [3, 3, 10, 3],
             "max_num_sweeps_list": [10],
             "energy_convergence_threshold_list": [1e-8],
             "sweep_schedule_bond_dims_parameters": [
@@ -96,6 +117,8 @@ class TestDmrgSinglePythonRun(unittest.TestCase):
         return config_files_list
 
     def test_single_python_runs(self):
+        # file_object_faulter = open("segfault.log", "w")
+        # faulthandler.enable(file=file_object_faulter)
         config_files_list = self.gen_files_prep()
         for config_file in config_files_list:
             (
@@ -186,3 +209,17 @@ class TestDmrgSinglePythonRun(unittest.TestCase):
                 / Path(f"{plot_filename_prefix}_energy_extrapolation"),
                 figNum=0,
             )
+            data_file_path = Path(data_config["data_file_path"])
+            fci_data = pyscf.tools.fcidump.read(data_file_path)
+            kernel = pyscf_wrappers.pyscf_fcidump_fci(fci_data)
+            log.info("----------------------------------------------------------------")
+            log.info("------------------------FCI----------------------------")
+            log.info("----------------------------------------------------------------")
+            # log.info(f"kernel: {kernel}")
+            log.info(f"FCI energy: {kernel[0]}")
+            log.info(f"DMRG energy: {energy_estimated}")
+            self.assertTrue(
+                np.allclose(kernel[0], energy_estimated, rtol=test_rtol, atol=test_atol)
+            )
+
+        # file_object_faulter.close()
