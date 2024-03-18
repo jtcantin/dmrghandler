@@ -1,4 +1,5 @@
 import logging
+import os
 from pathlib import Path
 
 log = logging.getLogger(__name__)
@@ -21,8 +22,7 @@ def gen_single_node_job_script(submit_dict, submit_script_file_name):
     python_run_file = submit_dict["python_run_file"]
     log_folder = submit_dict["log_folder"]
 
-    submit_script_string = f"""
-#!/bin/bash
+    submit_script_string = f"""#!/bin/bash
 #SBATCH --account={account_name}
 #SBATCH --nodes=1
 #SBATCH --time={time_cap_string}
@@ -37,6 +37,16 @@ def gen_single_node_job_script(submit_dict, submit_script_file_name):
 
 export LC_ALL=en_US.UTF-8
 
+# Below error handling from https://unix.stackexchange.com/a/462157
+set -eE -o functrace
+
+failure() {{
+  local lineno=$1
+  local msg=$2
+  echo "Failed at $lineno: $msg"
+}}
+trap 'failure ${{LINENO}} "$BASH_COMMAND"' ERR
+
 #Import Modules
 # module load CCEnv
 # module load StdEnv
@@ -44,13 +54,15 @@ export LC_ALL=en_US.UTF-8
 # module load boost cmake libffi fmt 
 # module load rust
 module load python/3.9
-module load intel/2021.2.0
+# module load intel/2021.2.0
 # module load hdf5/1.10.7
 
 #Activate python environment
-source {python_environment_location}
+source $SCRATCH/{python_environment_location}/bin/activate
 
-
+echo ' '
+echo $SCRATCH
+ls $SCRATCH
 
 # Turn off implicit threading in Python, R
 export OMP_NUM_THREADS=1
@@ -59,6 +71,7 @@ export OMP_NUM_THREADS=1
 echo ' '
 echo "current directory:"
 pwd
+ls
 
 #Help avoid clashes
 sleep $[ ( $RANDOM % 10 )  + 1 ]s
@@ -70,12 +83,17 @@ echo $datetime
 #work in RAMdisk
 cd $SLURM_TMPDIR
 
+echo ' '
+echo "current directory:"
+pwd
+ls
+
 #Copy over files
-mkdir {data_files_folder}
+mkdir -p {data_files_folder}
 cp -r $SCRATCH/{data_files_folder}/. ./{data_files_folder}
 echo 'data and python files copied over'
 
-mkdir {data_storage_folder}
+mkdir -p {data_storage_folder}
 
 echo "files currently here:"
 ls -lh
@@ -114,6 +132,7 @@ echo 'current directory'
 pwd
 echo 'files here:'
 ls -lh
+mkdir -p $SCRATCH/{data_storage_folder}
 cp -r {data_storage_folder}/. $SCRATCH/{data_storage_folder}
 echo "output files copied to $SCRATCH/{data_storage_folder}"
 cp -r {log_folder}/. $SCRATCH/{log_folder}
@@ -125,7 +144,7 @@ rm -rf {data_storage_folder}
 rm -rf {data_files_folder}
 rm -f *.py
 echo 'files remaining:'
-ls -lh
+ls -lhR
 
 echo 'Job Completed'
 cd $SCRATCH
@@ -292,9 +311,10 @@ def gen_submit_commands(config_dict_list):
 
         # change_dir_command = f"cd {submit_script_file_name.parent}\n"
         submit_dir = Path(data_prep_path.parent) / Path("submit_dir")
+        submit_dir.mkdir(exist_ok=True, parents=True)
         change_dir_command = f"cd {submit_dir}\n"
 
-        submit_command = f"sbatch {submit_script_file_name}\n"
+        submit_command = f"sbatch {os.path.relpath(submit_script_file_name.resolve(),start=submit_dir.resolve())}\n"
 
         log.info(comment_string)
         log.info(f"change_dir_command: {change_dir_command}")

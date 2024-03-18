@@ -57,7 +57,7 @@ class TestDmrgWholeSingleCalc(unittest.TestCase):
             "fcidump.2_co2_6-311++G__",  # Passes, gets FCI answer
             "fcidump.36_1ru_II_2pl_{'default' _ '6-31+G(d,p)', 'Ru' _ 'lanl2tz' }",  # Passes, gets FCI answer
             "fcidump.34_3ruo_IV_2pl_{'Ru' _ 'lanl2tz', 'default' _ '6-31+G(d,p)'}",  # Passes, gets FCI answer
-            "fcidump.36_1ru_II_2pl_{'default' _ '6-31+G(d,p)', 'Ru' _ 'lanl2tz' }",  # Passes, gets FCI answer
+            # "fcidump.36_1ru_II_2pl_{'default' _ '6-31+G(d,p)', 'Ru' _ 'lanl2tz' }",  # Passes, gets FCI answer
             # "data_for_testing/fcidump.32_2ru_III_3pl_{'default' _ '6-31+G(d,p)', 'Ru' _ 'lanl2tz' }",  # SIGFPE, (a segfault)
             # SIGFPE stack trace below; error appears in pyblock2/driver/core.py, line 2836 in dmrg:
             # Either it is pyblock2 that has the problem, or the problem is in the input data

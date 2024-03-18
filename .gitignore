@@ -163,3 +163,4 @@ submit_script_examples/*
 submit_script_examples.tar.gz
 prepare_calcs.py
 dmrg_single_loop_run.py
+prep_2.py
