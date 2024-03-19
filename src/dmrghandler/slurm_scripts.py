@@ -162,7 +162,7 @@ exit 0
 
 
 def gen_python_run_script(python_run_file_name, config_file_name):
-    python_run_script_string_1 = r"""
+    python_run_script_string_1 = rf"""
 import logging
 from pathlib import Path
 
@@ -170,18 +170,23 @@ import dmrghandler.dmrg_calc_prepare as dmrg_calc_prepare
 import dmrghandler.dmrg_looping as dmrg_looping
 import dmrghandler.energy_extrapolation as energy_extrapolation
 
-"""
-    python_run_script_string_2 = f"""
+
 log = logging.getLogger("{Path(config_file_name).stem}")
-"""
-    python_run_script_string_3 = r"""
+# log = logging.getLogger("dmrghandler")
+log.setLevel(logging.DEBUG)
+# create file handler which logs even debug messages
+fh = logging.FileHandler("dmrghandler.log")
+fh.setLevel(logging.DEBUG)
+# create formatter and add it to the handlers
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(filename)s - %(funcName)s - Line %(lineno)d - %(message)s")
+fh.setFormatter(formatter)
+# add the handlers to the log
+log.addHandler(fh)
 
 if __name__ == "__main__":
-"""
-    python_run_script_string_4 = f"""
+
     config_file = "{config_file_name}"
-    """
-    python_run_script_string_5 = r"""
+
     (
         one_body_tensor,
         two_body_tensor,
@@ -191,17 +196,17 @@ if __name__ == "__main__":
     ) = dmrg_calc_prepare.prepare_calc(config_file)
 
     if len(one_body_tensor) == 2:
-        log.debug(f"one_body_tensor: {one_body_tensor[0].shape}")
-        log.debug(f"one_body_tensor: {one_body_tensor[1].shape}")
-        log.debug(f"two_body_tensor: {two_body_tensor[0].shape}")
-        log.debug(f"two_body_tensor: {two_body_tensor[1].shape}")
-        log.debug(f"two_body_tensor: {two_body_tensor[2].shape}")
+        log.debug(f"one_body_tensor: {{one_body_tensor[0].shape}}")
+        log.debug(f"one_body_tensor: {{one_body_tensor[1].shape}}")
+        log.debug(f"two_body_tensor: {{two_body_tensor[0].shape}}")
+        log.debug(f"two_body_tensor: {{two_body_tensor[1].shape}}")
+        log.debug(f"two_body_tensor: {{two_body_tensor[2].shape}}")
     else:
-        log.debug(f"one_body_tensor: {one_body_tensor.shape}")
-        log.debug(f"two_body_tensor: {two_body_tensor.shape}")
-    log.debug(f"dmrg_parameters: {dmrg_parameters}")
-    log.debug(f"looping_parameters: {looping_parameters}")
-    log.debug(f"data_config: {data_config}")
+        log.debug(f"one_body_tensor: {{one_body_tensor.shape}}")
+        log.debug(f"two_body_tensor: {{two_body_tensor.shape}}")
+    log.debug(f"dmrg_parameters: {{dmrg_parameters}}")
+    log.debug(f"looping_parameters: {{looping_parameters}}")
+    log.debug(f"data_config: {{data_config}}")
 
     max_bond_dimension = looping_parameters["max_bond_dimension"]
     max_time_limit_sec = looping_parameters["max_time_limit_sec"]
@@ -229,15 +234,15 @@ if __name__ == "__main__":
     fit_parameters_list = loop_results["fit_parameters_list"]
 
     # final_dmrg_results = loop_results["final_dmrg_results"]
-    log.info(f"finish_reason: {finish_reason}")
-    log.info(f"energy_change: {energy_change}")
-    log.info(f"discard_weight_change: {discard_weight_change}")
-    log.info(f"bond_dims_used: {bond_dims_used}")
-    log.info(f"past_energies_dmrg: {past_energies_dmrg}")
-    log.info(f"past_discarded_weights: {past_discarded_weights}")
-    log.info(f"loop_entry_count: {loop_entry_count}")
-    log.info(f"unmodified_fit_parameters_list: {unmodified_fit_parameters_list}")
-    log.info(f"fit_parameters_list: {fit_parameters_list}")
+    log.info(f"finish_reason: {{finish_reason}}")
+    log.info(f"energy_change: {{energy_change}}")
+    log.info(f"discard_weight_change: {{discard_weight_change}}")
+    log.info(f"bond_dims_used: {{bond_dims_used}}")
+    log.info(f"past_energies_dmrg: {{past_energies_dmrg}}")
+    log.info(f"past_discarded_weights: {{past_discarded_weights}}")
+    log.info(f"loop_entry_count: {{loop_entry_count}}")
+    log.info(f"unmodified_fit_parameters_list: {{unmodified_fit_parameters_list}}")
+    log.info(f"fit_parameters_list: {{fit_parameters_list}}")
 
     # Get final extrapolated energy
     result_obj, energy_estimated, fit_parameters, R_squared = (
@@ -249,12 +254,12 @@ if __name__ == "__main__":
             verbosity=2,
         )
     )
-    log.info(f"energy_estimated: {energy_estimated}")
-    log.info(f"fit_parameters: {fit_parameters}")
-    log.info(f"R_squared: {R_squared}")
-    log.info(f"result_obj.message: {result_obj.message}")
-    log.info(f"result_obj.cost: {result_obj.cost}")
-    log.info(f"result_obj.fun: {result_obj.fun}")
+    log.info(f"energy_estimated: {{energy_estimated}}")
+    log.info(f"fit_parameters: {{fit_parameters}}")
+    log.info(f"R_squared: {{R_squared}}")
+    log.info(f"result_obj.message: {{result_obj.message}}")
+    log.info(f"result_obj.cost: {{result_obj.cost}}")
+    log.info(f"result_obj.fun: {{result_obj.fun}}")
     plot_filename_prefix = data_config["plot_filename_prefix"]
     energy_extrapolation.plot_extrapolation(
         discarded_weights=past_discarded_weights,
@@ -263,17 +268,12 @@ if __name__ == "__main__":
         bond_dims=bond_dims_used,
         plot_filename=main_storage_folder_path
         / Path("plots")
-        / Path(f"{plot_filename_prefix}_energy_extrapolation"),
+        / Path(f"{{plot_filename_prefix}}_energy_extrapolation"),
         figNum=0,
     )
     """
-    python_run_script_string = (
-        python_run_script_string_1
-        + python_run_script_string_2
-        + python_run_script_string_3
-        + python_run_script_string_4
-        + python_run_script_string_5
-    )
+    python_run_script_string = python_run_script_string_1
+
     log.debug(f"python_run_script_string: {python_run_script_string}")
     with open(python_run_file_name, "w") as file:
         file.write(python_run_script_string)

@@ -59,12 +59,14 @@ def dmrg_central_loop(
 
     # Initial two calculations
     # Run DMRG
+    print("Starting first preloop calc")
     dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc(
         one_body_tensor=one_body_tensor,
         two_body_tensor=two_body_tensor,
         dmrg_parameters=dmrg_parameters,
         verbosity=verbosity,
     )
+    print("Finished first preloop calc")
 
     energies_dmrg = np.array(dmrg_results["dmrg_ground_state_energy"])
     discarded_weights = np.array(dmrg_results["dmrg_discarded_weight"])
@@ -89,12 +91,14 @@ def dmrg_central_loop(
     dmrg_parameters["init_state_bond_dimension"] = init_state_bond_dimension
 
     # Run DMRG
+    print("Starting second preloop calc")
     dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc(
         one_body_tensor=one_body_tensor,
         two_body_tensor=two_body_tensor,
         dmrg_parameters=dmrg_parameters,
         verbosity=verbosity,
     )
+    print("Finished second preloop calc")
 
     past_energies_dmrg = np.hstack(
         [energies_dmrg, dmrg_results["dmrg_ground_state_energy"]]
@@ -126,6 +130,7 @@ def dmrg_central_loop(
         and wall_time_loop_ns < max_time_limit_sec * 1e9
     ):
         loop_entry_count += 1
+        print(f"Starting loop {loop_entry_count}")
         (
             dmrg_results,
             energy_estimated,
@@ -156,6 +161,7 @@ def dmrg_central_loop(
         past_parameters = fit_parameters
         unmodified_fit_parameters_list.append(unmodified_fit_parameters)
         fit_parameters_list.append(fit_parameters)
+        print(f"Finished loop {loop_entry_count}")
 
     if np.abs(energy_change) < min_energy_change_hartree:
         finish_reason = f"Energy change below threshold, limit {min_energy_change_hartree}, achieved {energy_change}"
