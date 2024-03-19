@@ -78,6 +78,11 @@ def dmrg_central_loop(
         main_storage_file_path=main_storage_file_path,
         calc_id_str="first_preloop_calc",
     )
+    after_first_preloop_ns = time.perf_counter_ns() - wall_time_start_ns
+    if after_first_preloop_ns > max_time_limit_sec * 1e9:
+        raise Exception(
+            f"First preloop calc took longer than time limit {max_time_limit_sec} s"
+        )
 
     # Update bond dimension
     sweep_schedule_bond_dims = dmrg_parameters["sweep_schedule_bond_dims"]
@@ -116,6 +121,12 @@ def dmrg_central_loop(
         main_storage_file_path=main_storage_file_path,
         calc_id_str="second_preloop_calc",
     )
+
+    after_second_preloop_ns = time.perf_counter_ns() - wall_time_start_ns
+    if after_second_preloop_ns > max_time_limit_sec * 1e9:
+        raise Exception(
+            f"Getting to after second preloop calc took longer than time limit {max_time_limit_sec} s"
+        )
 
     energy_change = np.inf
     wall_time_loop_ns = time.perf_counter_ns() - wall_time_start_ns
