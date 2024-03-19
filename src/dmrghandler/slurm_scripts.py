@@ -137,6 +137,7 @@ cp -r {data_storage_folder}/. $SCRATCH/{data_storage_folder}
 echo "output files copied to $SCRATCH/{data_storage_folder}"
 cp -r {log_folder}/. $SCRATCH/{log_folder}
 echo "log files copied to $SCRATCH/{log_folder}"
+cp *.log $SCRATCH/{data_storage_folder}
 
 #Clean up RAMDISK
 echo 'removing left over files'
