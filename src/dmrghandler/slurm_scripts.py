@@ -34,6 +34,37 @@ def gen_single_node_job_script(submit_dict, submit_script_file_name):
 ##SBATCH --partition={partition}
 #SBATCH --output={job_output_file}
 #SBATCH --error={job_error_file}
+# asks Slurm to send the USR1 signal 120 seconds before end of the time limit
+# Timeout signal handling based on https://documentation.sigma2.no/jobs/guides/cleanup_timeout.html 
+#SBATCH --signal=B:USR1@120
+
+# define the handler function
+# note that this is not executed here, but rather
+# when the associated signal is sent
+your_cleanup_function()
+{{
+    echo "function your_cleanup_function called at $(date)"
+    # do whatever cleanup you want here
+    #Copy output to project directory
+    echo 'current directory'
+    pwd
+    echo 'files here:'
+    ls -lh
+    mkdir -p $SCRATCH/{data_storage_folder}
+    cp -r {data_storage_folder}/. $SCRATCH/{data_storage_folder}
+    echo "output files copied to $SCRATCH/{data_storage_folder}"
+    cp -r {log_folder}/. $SCRATCH/{log_folder}
+    echo "log files copied to $SCRATCH/{log_folder}"
+    cp *.log $SCRATCH/{data_storage_folder}
+
+    #Clean up RAMDISK
+    echo 'removing left over files'
+    rm -rf {data_storage_folder}
+    rm -rf {data_files_folder}
+    rm -f *.py
+    echo 'files remaining:'
+    ls -lhR
+}}
 
 export LC_ALL=en_US.UTF-8
 
@@ -96,7 +127,7 @@ echo 'data and python files copied over'
 mkdir -p {data_storage_folder}
 
 echo "files currently here:"
-ls -lh
+ls -lhR
 
 #Get running information
 echo ' '
@@ -122,7 +153,8 @@ echo $SLURMD_NODENAME
 echo ' '
 echo 'Single run of DMRG calculations beginning'
 echo ' '
-python {python_run_file}
+python {python_run_file} &
+wait
 echo ' '
 echo 'Single run of DMRG calculations done'
 echo ' '
@@ -131,7 +163,7 @@ echo ' '
 echo 'current directory'
 pwd
 echo 'files here:'
-ls -lh
+ls -lhR
 mkdir -p $SCRATCH/{data_storage_folder}
 cp -r {data_storage_folder}/. $SCRATCH/{data_storage_folder}
 echo "output files copied to $SCRATCH/{data_storage_folder}"
