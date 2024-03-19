@@ -1,11 +1,15 @@
 # dmrghandler
 
-Handle DMRG calculations
+Handle DMRG calculations. The running code and submit script generation code is currently here. An example of how to use this package is still forthcoming.
 
 ## Installation
 
 ```bash
-$ pip install dmrghandler
+$ pip install git+https://github.com/jtcantin/dmrghandler
+```
+Update:
+```bash
+$ python -m pip install --force-reinstall --no-deps git+https://github.com/jtcantin/dmrghandler
 ```
 
 ## Usage
