@@ -204,8 +204,8 @@ import dmrghandler.dmrg_looping as dmrg_looping
 import dmrghandler.energy_extrapolation as energy_extrapolation
 
 
-log = logging.getLogger("{Path(config_file_name).stem}")
-# log = logging.getLogger("dmrghandler")
+# log = logging.getLogger("{Path(config_file_name).stem}")
+log = logging.getLogger("dmrghandler")
 log.setLevel(logging.DEBUG)
 # create file handler which logs even debug messages
 fh = logging.FileHandler("dmrghandler.log")
