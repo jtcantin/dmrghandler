@@ -3,7 +3,9 @@ QB Homogeneous catalyst benchmark:
 https://zapco.sharepoint.com/:f:/s/ZapataExternalDocs/EnIIY-UDjjxHpbFju43rMAQBRxhgD1TNVUE3Yyhp4qDkSQ?e=Fac0sm
 """
 
+import inspect
 import logging
+import os
 from pathlib import Path
 
 import h5py
@@ -14,12 +16,17 @@ import pyscf.tools.fcidump
 
 import dmrghandler.config_io as config_io
 import dmrghandler.pyscf_wrappers as pyscf_wrappers
+from dmrghandler.profiling import print_system_info
 
 # import dmrghandler.data_loading as data_loading
 log = logging.getLogger(__name__)
 
 
 def prepare_calc(config_file_name):
+    print_system_info(
+        f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
+    )
+
     config_dict = config_io.load_configuration_data(config_file_name)
 
     data_config = config_dict["data_config"]
@@ -40,6 +47,10 @@ def prepare_calc(config_file_name):
         extra_attributes,
         spin_symm_broken,
     ) = load_tensors(data_file_path)
+    log.debug(f"Loaded tensors from {data_file_path}")
+    print_system_info(
+        f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
+    )
 
     dmrg_basic_config = config_dict["dmrg_basic_config"]
     dmrg_advanced_config = config_dict["dmrg_advanced_config"]
@@ -100,6 +111,11 @@ def prepare_calc(config_file_name):
             + f"Config file: {config_file_name}\n"
             + f"Data file: {data_file_path}"
         )
+
+    log.debug(f"Preparations complete")
+    print_system_info(
+        f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
+    )
 
     return (
         one_body_tensor,

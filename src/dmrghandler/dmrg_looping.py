@@ -1,5 +1,7 @@
 import gc
+import inspect
 import logging
+import os
 import time
 from pathlib import Path
 
@@ -11,6 +13,7 @@ from block2 import SZ as block2_SZ
 import dmrghandler.energy_extrapolation as energy_extrapolation
 import dmrghandler.hdf5_io as hdf5_io
 import dmrghandler.qchem_dmrg_calc as qchem_dmrg_calc
+from dmrghandler.profiling import print_system_info
 
 log = logging.getLogger(__name__)
 
@@ -31,6 +34,10 @@ def dmrg_central_loop(
     main_storage_file_path = main_storage_folder_path / "dmrg_results.hdf5"
     # Make directory if it does not exist
     main_storage_folder_path.mkdir(parents=True, exist_ok=True)
+
+    print_system_info(
+        f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
+    )
 
     hdf5_io.save_many_variables_to_hdf5(
         hdf5_filepath=main_storage_file_path,
@@ -59,31 +66,65 @@ def dmrg_central_loop(
 
     # Initial two calculations
     # Run DMRG
-    print("Starting first preloop calc")
+    log.info("Starting first preloop calc")
+
+    print_system_info(
+        f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
+    )
+    wall_first_preloop_start_ns = time.perf_counter_ns()
+    cpu_first_preloop_start_ns = time.process_time_ns()
     dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc(
         one_body_tensor=one_body_tensor,
         two_body_tensor=two_body_tensor,
         dmrg_parameters=dmrg_parameters,
         verbosity=verbosity,
     )
-    print("Finished first preloop calc")
+    log.info("Finished first preloop calc")
+    wall_first_preloop_end_ns = time.perf_counter_ns()
+    cpu_first_preloop_end_ns = time.process_time_ns()
 
+    wall_first_preloop_ns = wall_first_preloop_end_ns - wall_first_preloop_start_ns
+    cpu_first_preloop_ns = cpu_first_preloop_end_ns - cpu_first_preloop_start_ns
+
+    log.info(f"wall_first_preloop_s: {wall_first_preloop_ns/1e9}")
+    log.info(f"cpu_first_preloop_s: {cpu_first_preloop_ns/1e9}")
+    print_system_info(
+        f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
+    )
+    log.info(
+        f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
+    )
     energies_dmrg = np.array(dmrg_results["dmrg_ground_state_energy"])
     discarded_weights = np.array(dmrg_results["dmrg_discarded_weight"])
     bond_dims_used = np.array(dmrg_parameters["sweep_schedule_bond_dims"][-1])
-
+    wall_dmrg_whole_calc_times_s = np.array(wall_first_preloop_ns / 1e9)
+    cpu_dmrg_whole_calc_times_s = np.array(cpu_first_preloop_ns / 1e9)
+    wall_dmrg_optimization_times_s = np.array(
+        dmrg_results["wall_dmrg_optimization_time_s"]
+    )
+    cpu_dmrg_optimization_times_s = np.array(
+        dmrg_results["cpu_dmrg_optimization_time_s"]
+    )
+    log.info(
+        f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
+    )
     save_dmrg_results(
         dmrg_results=dmrg_results,
         dmrg_parameters=dmrg_parameters,
         main_storage_file_path=main_storage_file_path,
         calc_id_str="first_preloop_calc",
     )
+    log.info(
+        f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
+    )
     after_first_preloop_ns = time.perf_counter_ns() - wall_time_start_ns
     if after_first_preloop_ns > max_time_limit_sec * 1e9:
         raise Exception(
             f"First preloop calc took longer than time limit {max_time_limit_sec} s"
         )
-
+    log.info(
+        f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
+    )
     # Update bond dimension
     sweep_schedule_bond_dims = dmrg_parameters["sweep_schedule_bond_dims"]
     init_state_bond_dimension = dmrg_parameters["init_state_bond_dimension"]
@@ -94,16 +135,35 @@ def dmrg_central_loop(
 
     dmrg_parameters["sweep_schedule_bond_dims"] = sweep_schedule_bond_dims
     dmrg_parameters["init_state_bond_dimension"] = init_state_bond_dimension
-
+    log.info(
+        f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
+    )
     # Run DMRG
-    print("Starting second preloop calc")
+    log.info("Starting second preloop calc")
+    print_system_info(
+        f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
+    )
+    wall_second_preloop_start_ns = time.perf_counter_ns()
+    cpu_second_preloop_start_ns = time.process_time_ns()
     dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc(
         one_body_tensor=one_body_tensor,
         two_body_tensor=two_body_tensor,
         dmrg_parameters=dmrg_parameters,
         verbosity=verbosity,
     )
-    print("Finished second preloop calc")
+
+    log.info("Finished second preloop calc")
+    wall_second_preloop_end_ns = time.perf_counter_ns()
+    cpu_second_preloop_end_ns = time.process_time_ns()
+
+    wall_second_preloop_ns = wall_second_preloop_end_ns - wall_second_preloop_start_ns
+    cpu_second_preloop_ns = cpu_second_preloop_end_ns - cpu_second_preloop_start_ns
+
+    log.info(f"wall_second_preloop_s: {wall_second_preloop_ns/1e9}")
+    log.info(f"cpu_second_preloop_s: {cpu_second_preloop_ns/1e9}")
+    print_system_info(
+        f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
+    )
 
     past_energies_dmrg = np.hstack(
         [energies_dmrg, dmrg_results["dmrg_ground_state_energy"]]
@@ -113,6 +173,18 @@ def dmrg_central_loop(
     )
     bond_dims_used = np.hstack(
         [bond_dims_used, dmrg_parameters["sweep_schedule_bond_dims"][-1]]
+    )
+    wall_dmrg_whole_calc_times_s = np.hstack(
+        [wall_dmrg_whole_calc_times_s, wall_second_preloop_ns / 1e9]
+    )
+    cpu_dmrg_whole_calc_times_s = np.hstack(
+        [cpu_dmrg_whole_calc_times_s, cpu_second_preloop_ns / 1e9]
+    )
+    wall_dmrg_optimization_times_s = np.hstack(
+        [wall_dmrg_optimization_times_s, dmrg_results["wall_dmrg_optimization_time_s"]]
+    )
+    cpu_dmrg_optimization_times_s = np.hstack(
+        [cpu_dmrg_optimization_times_s, dmrg_results["cpu_dmrg_optimization_time_s"]]
     )
 
     save_dmrg_results(
@@ -141,7 +213,12 @@ def dmrg_central_loop(
         and wall_time_loop_ns < max_time_limit_sec * 1e9
     ):
         loop_entry_count += 1
-        print(f"Starting loop {loop_entry_count}")
+        log.info(f"Starting loop {loop_entry_count}")
+        print_system_info(
+            f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
+        )
+        wall_dmrg_loop_start_ns = time.perf_counter_ns()
+        cpu_dmrg_loop_start_ns = time.process_time_ns()
         (
             dmrg_results,
             energy_estimated,
@@ -162,6 +239,12 @@ def dmrg_central_loop(
             past_parameters=past_parameters,
             verbosity=verbosity,
         )
+        wall_dmrg_loop_end_ns = time.perf_counter_ns()
+        cpu_dmrg_loop_end_ns = time.process_time_ns()
+
+        wall_dmrg_loop_ns = wall_dmrg_loop_end_ns - wall_dmrg_loop_start_ns
+        cpu_dmrg_loop_ns = cpu_dmrg_loop_end_ns - cpu_dmrg_loop_start_ns
+
         wall_time_loop_ns = time.perf_counter_ns() - wall_time_start_ns
         cpu_time_loop_ns = time.process_time_ns() - cpu_time_start_ns
         energy_change = past_energies_dmrg[-1] - past_energies_dmrg[-2]
@@ -169,10 +252,39 @@ def dmrg_central_loop(
         bond_dims_used = np.hstack(
             [bond_dims_used, result_storage_dict["sweep_schedule_bond_dims"][-1]]
         )
+        wall_dmrg_whole_calc_times_s = np.hstack(
+            [
+                wall_dmrg_whole_calc_times_s,
+                (wall_dmrg_loop_ns / 1e9) - result_storage_dict["wall_extrapolation_s"],
+            ]
+        )
+        cpu_dmrg_whole_calc_times_s = np.hstack(
+            [
+                cpu_dmrg_whole_calc_times_s,
+                (cpu_dmrg_loop_ns / 1e9) - result_storage_dict["cpu_extrapolation_s"],
+            ]
+        )
+        wall_dmrg_optimization_times_s = np.hstack(
+            [
+                wall_dmrg_optimization_times_s,
+                dmrg_results["wall_dmrg_optimization_time_s"],
+            ]
+        )
+        cpu_dmrg_optimization_times_s = np.hstack(
+            [
+                cpu_dmrg_optimization_times_s,
+                dmrg_results["cpu_dmrg_optimization_time_s"],
+            ]
+        )
         past_parameters = fit_parameters
         unmodified_fit_parameters_list.append(unmodified_fit_parameters)
         fit_parameters_list.append(fit_parameters)
-        print(f"Finished loop {loop_entry_count}")
+        log.info(f"Finished loop {loop_entry_count}")
+        log.info(f"wall_dmrg_loop_s: {wall_dmrg_loop_ns/1e9}")
+        log.info(f"cpu_dmrg_loop_s: {cpu_dmrg_loop_ns/1e9}")
+        print_system_info(
+            f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
+        )
 
     if np.abs(energy_change) < min_energy_change_hartree:
         finish_reason = f"Energy change below threshold, limit {min_energy_change_hartree}, achieved {energy_change}"
@@ -187,8 +299,8 @@ def dmrg_central_loop(
         "energies_dmrg": past_energies_dmrg,
         "discarded_weights": past_discarded_weights,
         # "result_storage_dict": result_storage_dict,
-        "wall_time_loop_ns": wall_time_loop_ns,
-        "cpu_time_loop_ns": cpu_time_loop_ns,
+        "wall_time_loop_s": wall_time_loop_ns / 1e9,
+        "cpu_time_loop_s": cpu_time_loop_ns / 1e9,
         "energy_change": energy_change,
         "discard_weight_change": discard_weight_change,
         "finish_reason": finish_reason,
@@ -199,6 +311,10 @@ def dmrg_central_loop(
         "unmodified_fit_parameters_list": unmodified_fit_parameters_list,
         "fit_parameters_list": fit_parameters_list,
         # "final_dmrg_results": dmrg_results,
+        "wall_dmrg_whole_calc_times_s": wall_dmrg_whole_calc_times_s,
+        "cpu_dmrg_whole_calc_times_s": cpu_dmrg_whole_calc_times_s,
+        "wall_dmrg_optimization_times_s": wall_dmrg_optimization_times_s,
+        "cpu_dmrg_optimization_times_s": cpu_dmrg_optimization_times_s,
     }
     hdf5_io.save_many_variables_to_hdf5(
         hdf5_filepath=main_storage_file_path,
@@ -209,6 +325,10 @@ def dmrg_central_loop(
     )
 
     loop_results["result_storage_dict"] = result_storage_dict
+
+    print_system_info(
+        f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
+    )
 
     return loop_results
 
@@ -250,6 +370,8 @@ def dmrg_loop_function(
     discarded_weights = np.append(
         past_discarded_weights, dmrg_results["dmrg_discarded_weight"]
     )
+    wall_extrapolation_start_ns = time.perf_counter_ns()
+    cpu_extrapolation_start_ns = time.process_time_ns()
     fit_result_obj, energy_estimated, fit_parameters, R_squared = (
         energy_extrapolation.dmrg_energy_extrapolation(
             energies_dmrg=energies_dmrg,
@@ -259,6 +381,10 @@ def dmrg_loop_function(
             verbosity=verbosity,
         )
     )
+    wall_extrapolation_ns = time.perf_counter_ns() - wall_extrapolation_start_ns
+    cpu_extrapolation_ns = time.process_time_ns() - cpu_extrapolation_start_ns
+    log.info(f"wall_extrapolation_s: {wall_extrapolation_ns/1e9}")
+    log.info(f"cpu_extrapolation_s: {cpu_extrapolation_ns/1e9}")
     # If DMRG energy is below estimated energy, then use DMRG energy as DMRG is variational
     fit_energy_replaced_by_dmrg = False
     unmodified_fit_parameters = fit_parameters.copy()
@@ -282,6 +408,8 @@ def dmrg_loop_function(
         "fit_parameters": fit_parameters,
         "R_squared": R_squared,
         "fit_energy_replaced_by_dmrg_bool": fit_energy_replaced_by_dmrg,
+        "wall_extrapolation_s": wall_extrapolation_ns / 1e9,
+        "cpu_extrapolation_s": cpu_extrapolation_ns / 1e9,
     }
 
     hdf5_io.save_many_variables_to_hdf5(
@@ -334,7 +462,8 @@ def prepare_dmrg_results_for_saving(
                 Path(main_storage_file_path.parent.name)
                 / f"mps_storage/{mps_id_str}_{key}"
             )
-
+        elif key in ["dmrg_driver"]:
+            continue
         else:
             dmrg_results_saveable[key] = value
 
@@ -375,6 +504,26 @@ def save_dmrg_results(
         group=f"{calc_id_str}/dmrg_results",
         overwrite=False,
     )
+    driver = dmrg_results["dmrg_driver"]
+    # Release the memory
+    log.info(f"Releasing the memory from driver")
+    print_system_info(
+        f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
+    )
+    driver.finalize()
+    log.info(f"Memory released from driver")
+    print_system_info(
+        f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
+    )
+
+    # Remove from dictionary
+    try:
+        del dmrg_results["ket_optimized"]
+        del dmrg_results["initial_ket"]
+        del dmrg_results["dmrg_driver"]
+    except KeyError:
+        pass
+
     del dmrg_results_saveable  # Clear memory
     gc.collect()  # Collect garbage
 

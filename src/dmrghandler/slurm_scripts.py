@@ -196,13 +196,18 @@ exit 0
 
 def gen_python_run_script(python_run_file_name, config_file_name):
     python_run_script_string_1 = rf"""
+import inspect
 import logging
+import os
+import time
+
 from pathlib import Path
 
 import dmrghandler.dmrg_calc_prepare as dmrg_calc_prepare
 import dmrghandler.dmrg_looping as dmrg_looping
 import dmrghandler.energy_extrapolation as energy_extrapolation
-
+from dmrghandler.profiling import print_system_info
+import dmrghandler.hdf5_io as hdf5_io
 
 # log = logging.getLogger("{Path(config_file_name).stem}")
 log = logging.getLogger("dmrghandler")
@@ -218,6 +223,13 @@ log.addHandler(fh)
 
 if __name__ == "__main__":
 
+    log.debug(f"Starting global calculation script")
+    print_system_info(
+        f"{{os.path.basename(__file__)}} - LINE {{inspect.getframeinfo(inspect.currentframe()).lineno}}"
+    )
+    wall_time_start_ns = time.perf_counter_ns()
+    cpu_time_start_ns = time.process_time_ns()
+
     config_file = "{config_file_name}"
 
     (
@@ -227,6 +239,26 @@ if __name__ == "__main__":
         looping_parameters,
         data_config,
     ) = dmrg_calc_prepare.prepare_calc(config_file)
+
+    wall_time_prepare_calc_done_ns = time.perf_counter_ns()
+    cpu_time_prepare_calc_done_ns = time.process_time_ns()
+
+    wall_time_prepare_calc_ns = wall_time_prepare_calc_done_ns - wall_time_start_ns
+    cpu_time_prepare_calc_ns = cpu_time_prepare_calc_done_ns - cpu_time_start_ns
+
+    wall_time_total_ns = time.perf_counter_ns() - wall_time_start_ns
+    cpu_time_total_ns = time.process_time_ns() - cpu_time_start_ns
+    log.debug(f"Calculations prepared.")
+    log.debug(f"wall_time_prepare_calc_s: {{wall_time_prepare_calc_ns/1E9}}")
+    log.debug(f"cpu_time_prepare_calc_s: {{cpu_time_prepare_calc_ns/1E9}}")
+    log.debug(f"wall_time_total_s: {{wall_time_total_ns/1E9}}")
+    log.debug(f"cpu_time_total_s: {{cpu_time_total_ns/1E9}}")
+
+    print_system_info(
+        f"{{os.path.basename(__file__)}} - LINE {{inspect.getframeinfo(inspect.currentframe()).lineno}}"
+    )
+
+    
 
     if len(one_body_tensor) == 2:
         log.debug(f"one_body_tensor: {{one_body_tensor[0].shape}}")
@@ -256,6 +288,23 @@ if __name__ == "__main__":
         verbosity=2,
     )
 
+    wall_time_dmrg_loop_done_ns = time.perf_counter_ns()
+    cpu_time_dmrg_loop_done_ns = time.process_time_ns()
+
+    wall_time_dmrg_loop_ns = wall_time_dmrg_loop_done_ns - wall_time_prepare_calc_done_ns
+    cpu_time_dmrg_loop_ns = cpu_time_dmrg_loop_done_ns - cpu_time_prepare_calc_done_ns
+
+    wall_time_total_ns = time.perf_counter_ns() - wall_time_start_ns
+    cpu_time_total_ns = time.process_time_ns() - cpu_time_start_ns
+    log.debug(f"Looping complete")
+    log.debug(f"wall_time_dmrg_loop_s: {{wall_time_dmrg_loop_ns/1E9}}")
+    log.debug(f"cpu_time_dmrg_loop_s: {{cpu_time_dmrg_loop_ns/1E9}}")
+    log.debug(f"wall_time_total_s: {{wall_time_total_ns/1E9}}")
+    log.debug(f"cpu_time_total_s: {{cpu_time_total_ns/1E9}}")
+    print_system_info(
+        f"{{os.path.basename(__file__)}} - LINE {{inspect.getframeinfo(inspect.currentframe()).lineno}}"
+    )
+
     finish_reason = loop_results["finish_reason"]
     energy_change = loop_results["energy_change"]
     discard_weight_change = loop_results["discard_weight_change"]
@@ -277,7 +326,36 @@ if __name__ == "__main__":
     log.info(f"unmodified_fit_parameters_list: {{unmodified_fit_parameters_list}}")
     log.info(f"fit_parameters_list: {{fit_parameters_list}}")
 
+    main_storage_folder_path = Path(main_storage_folder_path)
+    main_storage_file_path = main_storage_folder_path / "dmrg_results.hdf5"
+    # Make directory if it does not exist
+    main_storage_folder_path.mkdir(parents=True, exist_ok=True)
+
+    final_results_dict = {{
+        "final_dmrg_energy": past_energies_dmrg[-1],
+        "final_dmrg_bond_dim": bond_dims_used[-1],
+        "finish_reason": finish_reason,
+        "energy_change": energy_change,
+        "discard_weight_change": discard_weight_change,
+        "bond_dims_used": bond_dims_used,
+        "past_energies_dmrg": past_energies_dmrg,
+        "past_discarded_weights": past_discarded_weights,
+        "loop_entry_count": loop_entry_count,
+        "unmodified_fit_parameters_list": unmodified_fit_parameters_list,
+        "fit_parameters_list": fit_parameters_list,
+    }}
+
+    hdf5_io.save_many_variables_to_hdf5(
+        hdf5_filepath=main_storage_file_path,
+        variables=final_results_dict,
+        access_mode="a",
+        group="final_dmrg_results",
+        overwrite=False,
+    )
+
     # Get final extrapolated energy
+    wall_time_extrapolation_start_ns = time.perf_counter_ns()
+    cpu_time_extrapolation_start_ns = time.process_time_ns()
     result_obj, energy_estimated, fit_parameters, R_squared = (
         energy_extrapolation.dmrg_energy_extrapolation(
             energies_dmrg=past_energies_dmrg,
@@ -287,12 +365,47 @@ if __name__ == "__main__":
             verbosity=2,
         )
     )
+    wall_time_extrapolation_done_ns = time.perf_counter_ns()
+    cpu_time_extrapolation_done_ns = time.process_time_ns()
+
+    wall_time_extrapolation_ns = wall_time_extrapolation_done_ns - wall_time_extrapolation_start_ns
+    cpu_time_extrapolation_ns = cpu_time_extrapolation_done_ns - cpu_time_extrapolation_start_ns
+
+    wall_time_total_ns = time.perf_counter_ns() - wall_time_start_ns
+    cpu_time_total_ns = time.process_time_ns() - cpu_time_start_ns
+    log.debug(f"Extrapolation complete")
+    log.debug(f"wall_time_extrapolation_s: {{wall_time_extrapolation_ns/1E9}}")
+    log.debug(f"cpu_time_extrapolation_s: {{cpu_time_extrapolation_ns/1E9}}")
+    log.debug(f"wall_time_total_s: {{wall_time_total_ns/1E9}}")
+    log.debug(f"cpu_time_total_s: {{cpu_time_total_ns/1E9}}")
+
     log.info(f"energy_estimated: {{energy_estimated}}")
     log.info(f"fit_parameters: {{fit_parameters}}")
     log.info(f"R_squared: {{R_squared}}")
     log.info(f"result_obj.message: {{result_obj.message}}")
     log.info(f"result_obj.cost: {{result_obj.cost}}")
     log.info(f"result_obj.fun: {{result_obj.fun}}")
+
+    final_extrapolated_results_dict = {{
+        "energy_estimated": energy_estimated,
+        "fit_parameters": fit_parameters,
+        "R_squared": R_squared,
+        "result_obj_message": result_obj.message,
+        "result_obj_cost": result_obj.cost,
+        "result_obj_fun": result_obj.fun,
+    }}
+
+    hdf5_io.save_many_variables_to_hdf5(
+        hdf5_filepath=main_storage_file_path,
+        variables=final_extrapolated_results_dict,
+        access_mode="a",
+        group="final_extrapolated_results",
+        overwrite=False,
+    )
+
+    wall_time_plotting_start_ns = time.perf_counter_ns()
+    cpu_time_plotting_start_ns = time.process_time_ns()
+
     plot_filename_prefix = data_config["plot_filename_prefix"]
     energy_extrapolation.plot_extrapolation(
         discarded_weights=past_discarded_weights,
@@ -303,6 +416,41 @@ if __name__ == "__main__":
         / Path("plots")
         / Path(f"{{plot_filename_prefix}}_energy_extrapolation"),
         figNum=0,
+    )
+    wall_time_plotting_done_ns = time.perf_counter_ns()
+    cpu_time_plotting_done_ns = time.process_time_ns()
+
+    wall_time_plotting_ns = wall_time_plotting_done_ns - wall_time_plotting_start_ns
+    cpu_time_plotting_ns = cpu_time_plotting_done_ns - cpu_time_plotting_start_ns
+
+    wall_time_total_ns = time.perf_counter_ns() - wall_time_start_ns
+    cpu_time_total_ns = time.process_time_ns() - cpu_time_start_ns
+    log.debug(f"Plotting complete")
+    log.debug(f"wall_time_plotting_s: {{wall_time_plotting_ns/1E9}}")
+    log.debug(f"cpu_time_plotting_s: {{cpu_time_plotting_ns/1E9}}")
+    log.debug(f"wall_time_total_s: {{wall_time_total_ns/1E9}}")
+    log.debug(f"cpu_time_total_s: {{cpu_time_total_ns/1E9}}")
+
+    #Save timing data
+    timing_dict = {{
+        "wall_time_prepare_calc_s": wall_time_prepare_calc_ns/1e9,
+        "cpu_time_prepare_calc_s": cpu_time_prepare_calc_ns/1e9,
+        "wall_time_dmrg_loop_s": wall_time_dmrg_loop_ns/1e9,
+        "cpu_time_dmrg_loop_s": cpu_time_dmrg_loop_ns/1e9,
+        "wall_time_extrapolation_s": wall_time_extrapolation_ns/1e9,
+        "cpu_time_extrapolation_s": cpu_time_extrapolation_ns/1e9,
+        "wall_time_plotting_s": wall_time_plotting_ns/1e9,
+        "cpu_time_plotting_s": cpu_time_plotting_ns/1e9,
+        "wall_time_total_s": (time.perf_counter_ns() - wall_time_start_ns)/1e9,
+        "cpu_time_total_s": (time.process_time_ns() - cpu_time_start_ns)/1e9,
+    }}
+
+    hdf5_io.save_many_variables_to_hdf5(
+        hdf5_filepath=main_storage_file_path,
+        variables=timing_dict,
+        access_mode="a",
+        group="timing_data",
+        overwrite=False,
     )
     """
     python_run_script_string = python_run_script_string_1

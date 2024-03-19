@@ -4,10 +4,14 @@ This module contains functions for running a single DMRG calculation.
 
 import inspect
 import logging
+import os
+import time
 
 log = logging.getLogger(__name__)
 import numpy as np
 from pyblock2.driver.core import DMRGDriver, SymmetryTypes
+
+from dmrghandler.profiling import print_system_info
 
 default_final_bond_dim = 100
 default_sweep_schedule_bond_dims = [default_final_bond_dim] * 4 + [
@@ -34,6 +38,8 @@ def single_qchem_dmrg_calc(
     Returns:
         dict: The DMRG calculation results.
     """
+    wall_single_qchem_dmrg_calc_start_time_ns = time.perf_counter_ns()
+    cpu_single_qchem_dmrg_calc_start_time_ns = time.process_time_ns()
     # Extract the DMRG parameters
     factor_half_convention = dmrg_parameters["factor_half_convention"]
     symmetry_type_string = dmrg_parameters["symmetry_type"]
@@ -90,7 +96,9 @@ def single_qchem_dmrg_calc(
     initial_sweep_direction = dmrg_parameters[
         "initial_sweep_direction"
     ]  # Default is None, True means forward sweep (left-to-right)
-    log.debug(f"LINE {inspect.getframeinfo(inspect.currentframe()).lineno}")
+    print_system_info(
+        f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
+    )
     assert (
         num_spin_orbitals == 2 * num_orbitals
     ), "The number of spin orbitals must be twice the number of orbitals."
@@ -123,7 +131,11 @@ def single_qchem_dmrg_calc(
         spin = two_Sz
     else:
         raise ValueError(f"Invalid symmetry type: {symmetry_type_string}")
-    log.debug(f"LINE {inspect.getframeinfo(inspect.currentframe()).lineno}")
+    print_system_info(
+        f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
+    )
+    wall_make_driver_start_time_ns = time.perf_counter_ns()
+    cpu_make_driver_start_time_ns = time.process_time_ns()
     driver = DMRGDriver(
         stack_mem=stack_mem,
         scratch=temp_dir,
@@ -136,7 +148,23 @@ def single_qchem_dmrg_calc(
         stack_mem_ratio=0.4,  # Default value
         fp_codec_cutoff=1e-16,  # Default value
     )
-    log.debug(f"LINE {inspect.getframeinfo(inspect.currentframe()).lineno}")
+    wall_make_driver_end_time_ns = time.perf_counter_ns()
+    cpu_make_driver_end_time_ns = time.process_time_ns()
+
+    wall_make_driver_time_ns = (
+        wall_make_driver_end_time_ns - wall_make_driver_start_time_ns
+    )
+    cpu_make_driver_time_ns = (
+        cpu_make_driver_end_time_ns - cpu_make_driver_start_time_ns
+    )
+
+    log.info(f"wall_make_driver_time_s: {wall_make_driver_time_ns/1e9}")
+    log.info(f"cpu_make_driver_time_s: {cpu_make_driver_time_ns/1e9}")
+    print_system_info(
+        f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
+    )
+    wall_driver_initialize_system_start_time_ns = time.perf_counter_ns()
+    cpu_driver_initialize_system_start_time_ns = time.process_time_ns()
     driver.initialize_system(
         n_sites=num_orbitals,
         n_elec=num_electrons,
@@ -151,7 +179,29 @@ def single_qchem_dmrg_calc(
         target=None,  # Default value
         hamil_init=True,  # Default value
     )
-    log.debug(f"LINE {inspect.getframeinfo(inspect.currentframe()).lineno}")
+    wall_driver_initialize_system_end_time_ns = time.perf_counter_ns()
+    cpu_driver_initialize_system_end_time_ns = time.process_time_ns()
+
+    wall_driver_initialize_system_time_ns = (
+        wall_driver_initialize_system_end_time_ns
+        - wall_driver_initialize_system_start_time_ns
+    )
+    cpu_driver_initialize_system_time_ns = (
+        cpu_driver_initialize_system_end_time_ns
+        - cpu_driver_initialize_system_start_time_ns
+    )
+
+    log.info(
+        f"wall_driver_initialize_system_time_s: {wall_driver_initialize_system_time_ns/1e9}"
+    )
+    log.info(
+        f"cpu_driver_initialize_system_time_s: {cpu_driver_initialize_system_time_ns/1e9}"
+    )
+    print_system_info(
+        f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
+    )
+    wall_reorder_integrals_start_time_ns = time.perf_counter_ns()
+    cpu_reorder_integrals_start_time_ns = time.process_time_ns()
     one_body_tensor_reordered, two_body_tensor_factor_half_reordered = (
         reorder_integrals(
             one_body_tensor=one_body_tensor,
@@ -159,7 +209,23 @@ def single_qchem_dmrg_calc(
             reordering_method=reordering_method,
         )
     )
-    log.debug(f"LINE {inspect.getframeinfo(inspect.currentframe()).lineno}")
+    wall_reorder_integrals_end_time_ns = time.perf_counter_ns()
+    cpu_reorder_integrals_end_time_ns = time.process_time_ns()
+
+    wall_reorder_integrals_time_ns = (
+        wall_reorder_integrals_end_time_ns - wall_reorder_integrals_start_time_ns
+    )
+    cpu_reorder_integrals_time_ns = (
+        cpu_reorder_integrals_end_time_ns - cpu_reorder_integrals_start_time_ns
+    )
+
+    log.info(f"wall_reorder_integrals_time_s: {wall_reorder_integrals_time_ns/1e9}")
+    log.info(f"cpu_reorder_integrals_time_s: {cpu_reorder_integrals_time_ns/1e9}")
+    print_system_info(
+        f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
+    )
+    wall_get_qchem_hami_mpo_start_time_ns = time.perf_counter_ns()
+    cpu_get_qchem_hami_mpo_start_time_ns = time.process_time_ns()
     qchem_hami_mpo = driver.get_qc_mpo(
         h1e=one_body_tensor_reordered,
         g2e=two_body_tensor_factor_half_reordered,
@@ -193,16 +259,34 @@ def single_qchem_dmrg_calc(
         # gaopt_opts=None,  # Default value, options for gaopt reordering
         iprint=verbosity,
     )
-    log.debug(f"LINE {inspect.getframeinfo(inspect.currentframe()).lineno}")
+    wall_get_qchem_hami_mpo_end_time_ns = time.perf_counter_ns()
+    cpu_get_qchem_hami_mpo_end_time_ns = time.process_time_ns()
+
+    wall_get_qchem_hami_mpo_time_ns = (
+        wall_get_qchem_hami_mpo_end_time_ns - wall_get_qchem_hami_mpo_start_time_ns
+    )
+    cpu_get_qchem_hami_mpo_time_ns = (
+        cpu_get_qchem_hami_mpo_end_time_ns - cpu_get_qchem_hami_mpo_start_time_ns
+    )
+
+    log.info(f"wall_get_qchem_hami_mpo_time_s: {wall_get_qchem_hami_mpo_time_ns/1e9}")
+    log.info(f"cpu_get_qchem_hami_mpo_time_s: {cpu_get_qchem_hami_mpo_time_ns/1e9}")
+    print_system_info(
+        f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
+    )
     # Generate the initial MPS
     ############################
+    wall_generate_initial_mps_start_time_ns = time.perf_counter_ns()
+    cpu_generate_initial_mps_start_time_ns = time.process_time_ns()
     if initial_mps_method == "random":
         driver.bw.b.Random.rand_seed(init_state_seed)
     else:
         raise NotImplementedError(
             f"Not implemented initial MPS method: {initial_mps_method}"
         )
-    log.debug(f"LINE {inspect.getframeinfo(inspect.currentframe()).lineno}")
+    print_system_info(
+        f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
+    )
     initial_ket = driver.get_random_mps(
         tag="init_ket",
         bond_dim=init_state_bond_dimension,
@@ -258,14 +342,45 @@ def single_qchem_dmrg_calc(
     #     iprint=verbosity,
     #     # max_bond_dim=None,  # No restriction on the bond dimension
     # )
-    log.debug(f"LINE {inspect.getframeinfo(inspect.currentframe()).lineno}")
+    wall_generate_initial_mps_end_time_ns = time.perf_counter_ns()
+    cpu_generate_initial_mps_end_time_ns = time.process_time_ns()
+
+    wall_generate_initial_mps_time_ns = (
+        wall_generate_initial_mps_end_time_ns - wall_generate_initial_mps_start_time_ns
+    )
+    cpu_generate_initial_mps_time_ns = (
+        cpu_generate_initial_mps_end_time_ns - cpu_generate_initial_mps_start_time_ns
+    )
+
+    log.info(
+        f"wall_generate_initial_mps_time_s: {wall_generate_initial_mps_time_ns/1e9}"
+    )
+    log.info(f"cpu_generate_initial_mps_time_s: {cpu_generate_initial_mps_time_ns/1e9}")
+    print_system_info(
+        f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
+    )
     initial_bond_dims = initial_ket.info.bond_dim
 
+    wall_copy_mps_start_time_ns = time.perf_counter_ns()
+    cpu_copy_mps_start_time_ns = time.process_time_ns()
     ket_optimized = driver.copy_mps(initial_ket, tag="ket_optimized")
-    log.debug(f"LINE {inspect.getframeinfo(inspect.currentframe()).lineno}")
+    wall_copy_mps_end_time_ns = time.perf_counter_ns()
+    cpu_copy_mps_end_time_ns = time.process_time_ns()
+
+    wall_copy_mps_time_ns = wall_copy_mps_end_time_ns - wall_copy_mps_start_time_ns
+    cpu_copy_mps_time_ns = cpu_copy_mps_end_time_ns - cpu_copy_mps_start_time_ns
+
+    log.info(f"wall_copy_mps_time_s: {wall_copy_mps_time_ns/1e9}")
+    log.info(f"cpu_copy_mps_time_s: {cpu_copy_mps_time_ns/1e9}")
+
+    print_system_info(
+        f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
+    )
     log.debug(f"sweep_schedule_bond_dims: {sweep_schedule_bond_dims}")
     log.debug(f"sweep_schedule_noise: {sweep_schedule_noise}")
     log.debug(f"sweep_schedule_davidson_threshold: {sweep_schedule_davidson_threshold}")
+    wall_dmrg_optimization_start_time_ns = time.perf_counter_ns()
+    cpu_dmrg_optimization_start_time_ns = time.process_time_ns()
     dmrg_ground_state_energy = driver.dmrg(
         mpo=qchem_hami_mpo,
         ket=ket_optimized,
@@ -288,13 +403,40 @@ def single_qchem_dmrg_calc(
         # sweep_start=sweep_start,
         # forward=initial_sweep_direction,
     )
-    log.debug(f"LINE {inspect.getframeinfo(inspect.currentframe()).lineno}")
+    wall_dmrg_optimization_end_time_ns = time.perf_counter_ns()
+    cpu_dmrg_optimization_end_time_ns = time.process_time_ns()
+
+    wall_dmrg_optimization_time_ns = (
+        wall_dmrg_optimization_end_time_ns - wall_dmrg_optimization_start_time_ns
+    )
+    cpu_dmrg_optimization_time_ns = (
+        cpu_dmrg_optimization_end_time_ns - cpu_dmrg_optimization_start_time_ns
+    )
+
+    log.info(f"wall_dmrg_optimization_time_s: {wall_dmrg_optimization_time_ns/1e9}")
+    log.info(f"cpu_dmrg_optimization_time_s: {cpu_dmrg_optimization_time_ns/1e9}")
+
+    print_system_info(
+        f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
+    )
     sweep_bond_dims, sweep_max_discarded_weight, sweep_energies = (
         driver.get_dmrg_results()
+    )
+    wall_single_qchem_dmrg_calc_end_time_ns = time.perf_counter_ns()
+    cpu_single_qchem_dmrg_calc_end_time_ns = time.process_time_ns()
+
+    wall_single_qchem_dmrg_calc_time_ns = (
+        wall_single_qchem_dmrg_calc_end_time_ns
+        - wall_single_qchem_dmrg_calc_start_time_ns
+    )
+    cpu_single_qchem_dmrg_calc_time_ns = (
+        cpu_single_qchem_dmrg_calc_end_time_ns
+        - cpu_single_qchem_dmrg_calc_start_time_ns
     )
 
     dmrg_discarded_weight = sweep_max_discarded_weight[-1]
     dmrg_results_dict = {
+        "dmrg_driver": driver,
         "dmrg_ground_state_energy": dmrg_ground_state_energy,
         "initial_ket": initial_ket,
         # "initial_one_particle_density_matrix": initial_one_particle_density_matrix,
@@ -306,6 +448,24 @@ def single_qchem_dmrg_calc(
         "sweep_bond_dims": sweep_bond_dims,
         "sweep_max_discarded_weight": sweep_max_discarded_weight,
         "sweep_energies": sweep_energies,
+        "wall_make_driver_time_s": wall_make_driver_time_ns / 1e9,
+        "cpu_make_driver_time_s": cpu_make_driver_time_ns / 1e9,
+        "wall_driver_initialize_system_time_s": wall_driver_initialize_system_time_ns
+        / 1e9,
+        "cpu_driver_initialize_system_time_s": cpu_driver_initialize_system_time_ns
+        / 1e9,
+        "wall_reorder_integrals_time_s": wall_reorder_integrals_time_ns / 1e9,
+        "cpu_reorder_integrals_time_s": cpu_reorder_integrals_time_ns / 1e9,
+        "wall_get_qchem_hami_mpo_time_s": wall_get_qchem_hami_mpo_time_ns / 1e9,
+        "cpu_get_qchem_hami_mpo_time_s": cpu_get_qchem_hami_mpo_time_ns / 1e9,
+        "wall_generate_initial_mps_time_s": wall_generate_initial_mps_time_ns / 1e9,
+        "cpu_generate_initial_mps_time_s": cpu_generate_initial_mps_time_ns / 1e9,
+        "wall_copy_mps_time_s": wall_copy_mps_time_ns / 1e9,
+        "cpu_copy_mps_time_s": cpu_copy_mps_time_ns / 1e9,
+        "wall_dmrg_optimization_time_s": wall_dmrg_optimization_time_ns / 1e9,
+        "cpu_dmrg_optimization_time_s": cpu_dmrg_optimization_time_ns / 1e9,
+        "wall_single_qchem_dmrg_calc_time_s": wall_single_qchem_dmrg_calc_time_ns / 1e9,
+        "cpu_single_qchem_dmrg_calc_time_s": cpu_single_qchem_dmrg_calc_time_ns / 1e9,
     }
 
     return dmrg_results_dict
