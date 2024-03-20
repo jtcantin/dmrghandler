@@ -113,6 +113,7 @@ class TestDmrgLoopingSmallMolecule(unittest.TestCase):
             "lowmem_noise_bool": False,  # Whether to use a lower memory version of the noise, default is False
             "sweep_start": 0,  # Default is 0, where to start sweep
             "initial_sweep_direction": None,  # Default is None, True means forward sweep (left-to-right)
+            "stack_mem_ratio": 0.6,
         }
 
         uuid_main_storage_file_path = hdf5_io.get_generic_filename()

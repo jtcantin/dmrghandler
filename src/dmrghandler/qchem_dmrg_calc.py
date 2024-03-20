@@ -96,6 +96,10 @@ def single_qchem_dmrg_calc(
     initial_sweep_direction = dmrg_parameters[
         "initial_sweep_direction"
     ]  # Default is None, True means forward sweep (left-to-right)
+    stack_mem_ratio = dmrg_parameters[
+        "stack_mem_ratio"
+    ]  # Default value is 0.4, ratio of stack memory to total memory
+
     print_system_info(
         f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
     )
@@ -145,8 +149,8 @@ def single_qchem_dmrg_calc(
         # n_mkl_threads=n_mkl_threads,  # Default value is 1
         symm_type=symmetry_type,
         mpi=None,  # Default value
-        stack_mem_ratio=0.4,  # Default value
-        fp_codec_cutoff=1e-16,  # Default value
+        stack_mem_ratio=stack_mem_ratio,  # Default value 0.4
+        fp_codec_cutoff=1e-16,  # Default value 1e-16
     )
     wall_make_driver_end_time_ns = time.perf_counter_ns()
     cpu_make_driver_end_time_ns = time.process_time_ns()

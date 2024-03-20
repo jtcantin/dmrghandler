@@ -145,6 +145,7 @@ def save_dmrg_configuration_data(config_file: str, data: dict):
             "lowmem_noise_bool",
             "sweep_start",
             "initial_sweep_direction",
+            "stack_mem_ratio",
         ],
     )
 
@@ -173,6 +174,7 @@ def gen_config_files(
             "sweep_start": 0,  # Default is 0, where to start sweep
             "initial_sweep_direction": None,  # Default is None, True means forward sweep (left-to-right)
             "stack_mem": 1073741824,
+            "stack_mem_ratio": 0.4,  # Default is 0.4
         }
     config_dict_single_file_list = []
     for data_iter, data_file_path in enumerate(data_file_list):

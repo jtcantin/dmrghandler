@@ -100,6 +100,7 @@ def prepare_calc(config_file_name):
             "lowmem_noise_bool",  # Whether to use a lower memory version of the noise, default is False
             "sweep_start",  # Default is 0, where to start sweep
             "initial_sweep_direction",  # Default is None, True means forward sweep (left-to-right)
+            "stack_mem_ratio",
         ],
     )
 
