@@ -169,3 +169,4 @@ run_command.txt
 aasdf.sh
 26_pc_energy_extrapolation_EDMRG_bond_dims.pdf
 prepare_calcs_mo_pincer_n2.py
+prepare_calcs_mo_pincer_n2_truly_change_mem_limits.py

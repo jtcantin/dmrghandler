@@ -138,6 +138,7 @@ def single_qchem_dmrg_calc(
     print_system_info(
         f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
     )
+    log.debug(f"DMRG parameters right before driver initialization: {dmrg_parameters}")
     wall_make_driver_start_time_ns = time.perf_counter_ns()
     cpu_make_driver_start_time_ns = time.process_time_ns()
     driver = DMRGDriver(
@@ -152,6 +153,8 @@ def single_qchem_dmrg_calc(
         stack_mem_ratio=stack_mem_ratio,  # Default value 0.4
         fp_codec_cutoff=1e-16,  # Default value 1e-16
     )
+    log.debug(f"recorded stack_mem_ratio: {driver.stack_mem_ratio}")
+    log.debug(f"recorded stack_mem: {driver.stack_mem}")
     wall_make_driver_end_time_ns = time.perf_counter_ns()
     cpu_make_driver_end_time_ns = time.process_time_ns()
 

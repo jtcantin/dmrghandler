@@ -107,7 +107,7 @@ class TestDmrgSmallMolecule(unittest.TestCase):
             "lowmem_noise_bool": False,  # Whether to use a lower memory version of the noise, default is False
             "sweep_start": 0,  # Default is 0, where to start sweep
             "initial_sweep_direction": None,  # Default is None, True means forward sweep (left-to-right)
-            "stack_mem_ratio": 0.4,  # Default is 0.4
+            "stack_mem_ratio": 0.8,  # Default is 0.4
         }
         one_body_tensor_sz = [one_body_tensor, one_body_tensor]
         two_body_tensor_sz = [two_body_tensor, two_body_tensor, two_body_tensor]
@@ -185,7 +185,7 @@ class TestDmrgSmallMolecule(unittest.TestCase):
             "two_Sz": int((multiplicity - 1) / 2),
             "orb_sym": None,
             "temp_dir": "./tests/temp",
-            "stack_mem": 1073741824,
+            "stack_mem": 2 * 1073741824,
             "restart_dir": "./tests/restart",
             "core_energy": nuc_rep_energy,
             "reordering_method": "none",
@@ -207,7 +207,7 @@ class TestDmrgSmallMolecule(unittest.TestCase):
             "lowmem_noise_bool": False,  # Whether to use a lower memory version of the noise, default is False
             "sweep_start": 0,  # Default is 0, where to start sweep
             "initial_sweep_direction": None,  # Default is None, True means forward sweep (left-to-right)
-            "stack_mem_ratio": 0.4,  # Default is 0.4
+            "stack_mem_ratio": 0.75,  # Default is 0.4
         }
 
         dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc(
