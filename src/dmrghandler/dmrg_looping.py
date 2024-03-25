@@ -502,29 +502,29 @@ def save_dmrg_results(
     )
 
     if move_mps_to_final_storage_path is not None:
-        final_destination = Path(
-            move_mps_to_final_storage_path
-            / main_storage_file_path.parent.parent
-            / dmrg_results_saveable["initial_ket_storage"]
+        final_destination = (
+            Path(move_mps_to_final_storage_path)
+            / Path(main_storage_file_path.parent.parent)
+            / Path(dmrg_results_saveable["initial_ket_storage"])
         )
+
         final_destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.move(
-            main_storage_file_path.parent.parent
-            / dmrg_results_saveable["initial_ket_storage"],
+            Path(main_storage_file_path.parent.parent)
+            / Path(dmrg_results_saveable["initial_ket_storage"]),
             final_destination,
         )
-        final_destination = Path(
-            move_mps_to_final_storage_path
-            / main_storage_file_path.parent.parent
-            / dmrg_results_saveable["ket_optimized_storage"]
+        final_destination = (
+            Path(move_mps_to_final_storage_path)
+            / Path(main_storage_file_path.parent.parent)
+            / Path(dmrg_results_saveable["ket_optimized_storage"])
         )
+
         final_destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.move(
-            main_storage_file_path.parent.parent
-            / dmrg_results_saveable["ket_optimized_storage"],
-            move_mps_to_final_storage_path
-            / main_storage_file_path.parent.parent
-            / dmrg_results_saveable["ket_optimized_storage"],
+            Path(main_storage_file_path.parent.parent)
+            / Path(dmrg_results_saveable["ket_optimized_storage"]),
+            final_destination,
         )
 
     hdf5_io.save_many_variables_to_hdf5(
