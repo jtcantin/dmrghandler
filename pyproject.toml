@@ -14,6 +14,7 @@ matplotlib = "^3.8.3"
 pandas = "^2.2.1"
 pyyaml = "^6.0.1"
 openfermion = "^1.6.1"
+notebook = "^7.1.2"
 
 [tool.poetry.dev-dependencies]
 

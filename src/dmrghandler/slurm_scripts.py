@@ -102,7 +102,7 @@ export OMP_NUM_THREADS=1
 echo ' '
 echo "current directory:"
 pwd
-ls
+# ls
 
 #Help avoid clashes
 sleep $[ ( $RANDOM % 10 )  + 1 ]s
@@ -166,12 +166,12 @@ echo 'files here:'
 ls -lhR
 mkdir -p $SCRATCH/{data_storage_folder}
 cp {data_storage_folder}/dmrg_results.hdf5 $SCRATCH/{data_storage_folder}
-cp {data_storage_folder}/dmrghandler.log $SCRATCH/{data_storage_folder}
+cp ./dmrghandler.log $SCRATCH/{data_storage_folder}
 cp -r {data_storage_folder}/plots $SCRATCH/{data_storage_folder}
 echo "output files copied to $SCRATCH/{data_storage_folder}"
-cp -r {log_folder}/. $SCRATCH/{log_folder}
-echo "log files copied to $SCRATCH/{log_folder}"
-cp *.log $SCRATCH/{data_storage_folder}
+#cp -r {log_folder}/. $SCRATCH/{log_folder}
+#echo "log files copied to $SCRATCH/{log_folder}"
+#cp *.log $SCRATCH/{data_storage_folder}
 
 #Clean up RAMDISK
 echo 'removing left over files'

@@ -173,3 +173,5 @@ prepare_calcs_mo_pincer_n2_truly_change_mem_limits.py
 file_list.txt
 prepare_calcs_small_singlet_catalysts.py
 i_moved_myself/*
+prepare_calcs_mo_pincer_n2_4a_mult_4.py
+extract_dmrg_results_incompletely_processed_data.ipynb
