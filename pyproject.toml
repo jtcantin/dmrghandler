@@ -16,6 +16,7 @@ pyyaml = "^6.0.1"
 openfermion = "^1.6.1"
 sparse = "^0.15.1"
 f90nml = "^1.4.4"
+notebook = "^7.1.2"
 
 [tool.poetry.dev-dependencies]
 
