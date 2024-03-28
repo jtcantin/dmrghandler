@@ -176,3 +176,8 @@ i_moved_myself/*
 prepare_calcs_mo_pincer_n2_4a_mult_4.py
 extract_dmrg_results_incompletely_processed_data.ipynb
 HEADER_FILE.py
+block2_fcidump.ipynb
+fcidump.test
+tests/data_storage/*
+tmp/*
+tests/model_hami/*
