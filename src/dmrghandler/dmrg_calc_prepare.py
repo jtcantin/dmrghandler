@@ -304,8 +304,16 @@ def load_tensors_from_hdf5(data_file_path, avas_threshold=0.2):
     )
 
 
-def load_tensors_from_fcidump(data_file_path):
-    fci_data = pyscf.tools.fcidump.read(data_file_path)
+def load_tensors_from_fcidump(data_file_path, molpro_orbsym_convention=True):
+    """
+    Load tensors from a FCIDUMP file.
+    FCIDUMP files from Chemistry Benchmark appear to have the molpro orbital symmetries convention.
+    No issues have been seen so far for singlets if molpro_orbsym_convention is set to False,
+    but for non-singlet cases, Block2 cannot generate an appropriate initial state if
+    molpro_orbsym_convention is set to False."""
+    fci_data = pyscf.tools.fcidump.read(
+        data_file_path, molpro_orbsym=molpro_orbsym_convention
+    )
 
     # dict_keys(['NORB', 'NELEC', 'MS2', 'ORBSYM', 'ISYM', 'ECORE', 'H1', 'H2'])
     num_orbitals = int(fci_data["NORB"])
