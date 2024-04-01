@@ -168,13 +168,13 @@ run_command.txt
 aasdf.sh
 26_pc_energy_extrapolation_EDMRG_bond_dims.pdf
 file_list.txt
-HEADER_FILE.py
-extract_dmrg_results_incompletely_processed_data.ipynb
 i_moved_myself/*
+extract_dmrg_results_incompletely_processed_data.ipynb
 tests/data_storage/*
-tests/model_hami/*
 tmp/*
-block2_fcidump.ipynb
+HEADER_FILE.py
 fcidump.test
+block2_fcidump.ipynb
+tests/model_hami/*
 tests/scratch_sim/*
 prepare_calcs*.py
