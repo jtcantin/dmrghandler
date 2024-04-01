@@ -161,19 +161,14 @@ config_store/*
 data_storage/*
 submit_script_examples/*
 submit_script_examples.tar.gz
-prepare_calcs.py
 dmrg_single_loop_run.py
 prep_2.py
 cc_installation_commands.txt
 run_command.txt
 aasdf.sh
 26_pc_energy_extrapolation_EDMRG_bond_dims.pdf
-prepare_calcs_mo_pincer_n2.py
-prepare_calcs_mo_pincer_n2_truly_change_mem_limits.py
 file_list.txt
-prepare_calcs_small_singlet_catalysts.py
 i_moved_myself/*
-prepare_calcs_mo_pincer_n2_4a_mult_4.py
 extract_dmrg_results_incompletely_processed_data.ipynb
 tests/data_storage/*
 tmp/*
@@ -182,3 +177,4 @@ fcidump.test
 block2_fcidump.ipynb
 tests/model_hami/*
 tests/scratch_sim/*
+prepare_calcs*.py
