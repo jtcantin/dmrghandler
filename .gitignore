@@ -178,3 +178,5 @@ block2_fcidump.ipynb
 tests/model_hami/*
 tests/scratch_sim/*
 prepare_calcs*.py
+model_hami_store/*
+31_4a_convergence.pdf

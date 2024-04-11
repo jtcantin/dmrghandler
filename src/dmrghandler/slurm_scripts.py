@@ -288,7 +288,7 @@ if __name__ == "__main__":
         min_energy_change_hartree=min_energy_change_hartree,
         main_storage_folder_path=main_storage_folder_path,
         verbosity=2,
-        move_mps_to_final_storage_path=os.environ['SCRATCH']
+        mps_final_storage_path=os.environ['SCRATCH']
     )
 
     wall_time_dmrg_loop_done_ns = time.perf_counter_ns()
