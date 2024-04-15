@@ -491,7 +491,7 @@ def save_dmrg_results(
         mps_id_str=calc_id_str,
         main_storage_file_path=main_storage_file_path,
     )
-    final_destination = (
+    final_destination = str(
         Path(mps_final_storage_path)
         / Path(main_storage_file_path.parent.parent)
         / Path(dmrg_results_saveable["initial_ket_storage"])
@@ -501,7 +501,7 @@ def save_dmrg_results(
         mpsSaveDir=final_destination,
     )
 
-    final_destination = (
+    final_destination = str(
         Path(mps_final_storage_path)
         / Path(main_storage_file_path.parent.parent)
         / Path(dmrg_results_saveable["ket_optimized_storage"])
