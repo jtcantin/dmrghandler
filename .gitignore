@@ -181,3 +181,5 @@ prepare_calcs*.py
 model_hami_store/*
 31_4a_convergence.pdf
 run_command_model_hamis.txt
+hamiltonian_folder_correlation.txt
+run_command_mo_n2_schrock.txt
