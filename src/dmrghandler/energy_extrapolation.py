@@ -115,7 +115,7 @@ def discarded_weight_extrapolation(
         x0=initial_guess,
         # jac=discarded_weight_residuals_gradient_matrix,
         jac="3-point",
-        bounds=([0, 0, -np.inf], [np.inf, np.inf, 0]),  # alpha, b, E_estimated
+        bounds=([0, 0, -np.inf], [np.inf, np.inf, np.inf]),  # alpha, b, E_estimated
         # np.inf >= alpha = exp(a) >= 0
         # b >= 0 as it is required δϵ^b -> 0 as δϵ -> 0
         method="dogbox",  # Recommended by Scipy for small problems with bounds

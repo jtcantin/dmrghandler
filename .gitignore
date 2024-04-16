@@ -180,3 +180,4 @@ tests/scratch_sim/*
 prepare_calcs*.py
 model_hami_store/*
 31_4a_convergence.pdf
+run_command_model_hamis.txt
