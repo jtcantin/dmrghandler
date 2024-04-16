@@ -504,7 +504,23 @@ def gen_submit_commands(config_dict_list):
         log.info(f"change_dir_command: {change_dir_command}")
         log.info(f"submit_command: {submit_command}")
         submit_commands_str += comment_string
-        submit_commands_str += change_dir_command
+        # submit_commands_str += change_dir_command
         submit_commands_str += submit_command
+    submit_commands_str += "\n"
+    submit_commands_str += "\n"
+    submit_commands_str += "\n"
+    submit_dir = Path(data_prep_path.parent) / Path("submit_dir")
+    submit_dir.mkdir(exist_ok=True, parents=True)
+    change_dir_command = f"cd {submit_dir}\n"
+    submit_commands_str += change_dir_command
+
+    for config_dict in config_dict_list:
+        data_config = config_dict["data_config"]
+        submit_script_file_name = Path(data_config["submit_script_file"])
+        submit_command = f"sbatch {os.path.relpath(submit_script_file_name.resolve(),start=submit_dir.resolve())}\n"
+        log.info(f"submit_command: {submit_command}")
+        submit_commands_str += submit_command
+
+    submit_commands_str += "\n"
 
     return submit_commands_str
