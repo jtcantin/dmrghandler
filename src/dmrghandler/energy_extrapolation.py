@@ -105,17 +105,20 @@ def discarded_weight_extrapolation(
         R_squared: R^2 value of the fit
     """
     if past_parameters is None:
-        initial_guess = [0.25, 1.4, energies_dmrg[-1]]
+        initial_guess = [0.25, 1.4, np.min(energies_dmrg) - 1e-3]
     else:
         initial_guess = past_parameters
 
     # print(f"Initial guess: {initial_guess}")
     result_obj = scipy.optimize.least_squares(
-        fun=discarded_weight_residuals_function,
+        fun=discarded_weight_residuals_function_ln,
         x0=initial_guess,
         # jac=discarded_weight_residuals_gradient_matrix,
         jac="3-point",
-        bounds=([0, 0, -np.inf], [np.inf, np.inf, 0]),  # alpha, b, E_estimated
+        bounds=(
+            [0, 0, -np.inf],
+            [np.inf, np.inf, np.min(energies_dmrg)],
+        ),  # alpha, b, E_estimated
         # np.inf >= alpha = exp(a) >= 0
         # b >= 0 as it is required δϵ^b -> 0 as δϵ -> 0
         method="dogbox",  # Recommended by Scipy for small problems with bounds
@@ -164,6 +167,34 @@ def discarded_weight_cost_function(param_vec, discarded_weights, energies_dmrg):
     return np.sum(
         np.power(E_estimated * alpha_X_weight_to_b + E_estimated - energies_dmrg, 2)
     )
+
+
+def discarded_weight_residuals_function_ln(
+    param_vec, discarded_weights, energies_dmrg, local_log_shift=1e-16
+):
+    """
+    Residuals for the discarded weight extrapolation.
+    Has the form:
+        ln(ΔE_rel) =a+b ln(δϵ)
+        where ΔE_rel = |(E_DMRG - E_estimated)/E_estimated|
+        E_estimated is treated as a free parameter in the fit.
+
+    Args:
+        param_vec: list of fit parameters [a, b, E_estimated], length n=3
+        discarded_weights: list of discarded_weights
+        energies_dmrg: list of DMRG energies
+        a: fit parameter
+        b: fit parameter
+        E_estimated: fit parameter, energy to be estimated
+
+    Returns:
+        residuals: darray (of lenght len(discarded_weights)) of the residuals
+    """
+    a, b, E_estimated = param_vec
+    # discarded_weights, energies_dmrg = args
+    linear_term = a + b * np.log(discarded_weights)
+    energy_term = (energies_dmrg - E_estimated) / E_estimated
+    return np.abs(np.log(np.abs(energy_term) + local_log_shift) - linear_term) ** 2
 
 
 def discarded_weight_residuals_function(param_vec, discarded_weights, energies_dmrg):

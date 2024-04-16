@@ -179,3 +179,6 @@ tests/model_hami/*
 tests/scratch_sim/*
 prepare_calcs*.py
 31_4a_convergence.pdf
+model_hami_store/*
+run_command_model_hamis.txt
+hamiltonian_folder_correlation.txt
