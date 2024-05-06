@@ -554,8 +554,8 @@ def check_spin_symmetry(one_body_tensor, two_body_tensor):
             for riter in range(num_orbitals):
                 for siter in range(num_orbitals):
 
-                    if not (
-                        np.allclose(
+                    if  (
+                        not np.allclose(
                             two_body_tensor[2 * piter, 2 * qiter, 2 * riter, 2 * siter],
                             two_body_tensor[
                                 2 * piter + 1, 2 * qiter + 1, 2 * riter, 2 * siter
