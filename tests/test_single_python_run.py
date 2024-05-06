@@ -160,7 +160,7 @@ class TestDmrgSinglePythonRun(unittest.TestCase):
                 min_energy_change_hartree=min_energy_change_hartree,
                 main_storage_folder_path=main_storage_folder_path,
                 verbosity=2,
-                move_mps_to_final_storage_path="i_moved_myself",
+                mps_final_storage_path="i_moved_myself",
             )
 
             finish_reason = loop_results["finish_reason"]

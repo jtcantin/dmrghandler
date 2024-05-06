@@ -2,7 +2,8 @@ import gc
 import inspect
 import logging
 import os
-import shutil
+
+# import shutil
 import time
 from pathlib import Path
 
@@ -28,7 +29,7 @@ def dmrg_central_loop(
     min_energy_change_hartree: float,
     main_storage_folder_path: str,
     verbosity: int = 0,
-    move_mps_to_final_storage_path=None,
+    mps_final_storage_path="./",
 ):
     wall_time_start_ns = time.perf_counter_ns()
     cpu_time_start_ns = time.process_time_ns()
@@ -115,7 +116,7 @@ def dmrg_central_loop(
         dmrg_parameters=dmrg_parameters,
         main_storage_file_path=main_storage_file_path,
         calc_id_str="first_preloop_calc",
-        move_mps_to_final_storage_path=move_mps_to_final_storage_path,
+        mps_final_storage_path=mps_final_storage_path,
     )
     log.info(
         f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
@@ -195,7 +196,7 @@ def dmrg_central_loop(
         dmrg_parameters=dmrg_parameters,
         main_storage_file_path=main_storage_file_path,
         calc_id_str="second_preloop_calc",
-        move_mps_to_final_storage_path=move_mps_to_final_storage_path,
+        mps_final_storage_path=mps_final_storage_path,
     )
 
     after_second_preloop_ns = time.perf_counter_ns() - wall_time_start_ns
@@ -242,7 +243,7 @@ def dmrg_central_loop(
             main_storage_file_path=main_storage_file_path,
             past_parameters=past_parameters,
             verbosity=verbosity,
-            move_mps_to_final_storage_path=move_mps_to_final_storage_path,
+            move_mps_to_final_storage_path=mps_final_storage_path,
         )
         wall_dmrg_loop_end_ns = time.perf_counter_ns()
         cpu_dmrg_loop_end_ns = time.process_time_ns()
@@ -405,7 +406,7 @@ def dmrg_loop_function(
         dmrg_parameters=dmrg_parameters,
         main_storage_file_path=main_storage_file_path,
         calc_id_str=f"dmrg_loop_{loop_entry_count:03d}",
-        move_mps_to_final_storage_path=move_mps_to_final_storage_path,
+        mps_final_storage_path=move_mps_to_final_storage_path,
     )
 
     result_storage_dict = {
@@ -482,7 +483,7 @@ def save_dmrg_results(
     dmrg_parameters,
     main_storage_file_path,
     calc_id_str,
-    move_mps_to_final_storage_path=None,
+    mps_final_storage_path="./",
 ):
     dmrg_results_saveable = prepare_dmrg_results_for_saving(
         dmrg_results=dmrg_results,
@@ -490,42 +491,41 @@ def save_dmrg_results(
         mps_id_str=calc_id_str,
         main_storage_file_path=main_storage_file_path,
     )
+    final_destination = str(
+        Path(mps_final_storage_path)
+        / Path(main_storage_file_path.parent.parent)
+        / Path(dmrg_results_saveable["initial_ket_storage"])
+    )
     pyblock2.tools.saveMPStoDir(
         mps=dmrg_results["initial_ket"],
-        mpsSaveDir=main_storage_file_path.parent.parent
-        / dmrg_results_saveable["initial_ket_storage"],
+        mpsSaveDir=final_destination,
+    )
+
+    final_destination = str(
+        Path(mps_final_storage_path)
+        / Path(main_storage_file_path.parent.parent)
+        / Path(dmrg_results_saveable["ket_optimized_storage"])
     )
     pyblock2.tools.saveMPStoDir(
         mps=dmrg_results["ket_optimized"],
-        mpsSaveDir=main_storage_file_path.parent.parent
-        / dmrg_results_saveable["ket_optimized_storage"],
+        mpsSaveDir=final_destination,
     )
 
-    if move_mps_to_final_storage_path is not None:
-        final_destination = (
-            Path(move_mps_to_final_storage_path)
-            / Path(main_storage_file_path.parent.parent)
-            / Path(dmrg_results_saveable["initial_ket_storage"])
-        )
+    # if mps_final_storage_path is not None:
 
-        final_destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.move(
-            Path(main_storage_file_path.parent.parent)
-            / Path(dmrg_results_saveable["initial_ket_storage"]),
-            final_destination,
-        )
-        final_destination = (
-            Path(move_mps_to_final_storage_path)
-            / Path(main_storage_file_path.parent.parent)
-            / Path(dmrg_results_saveable["ket_optimized_storage"])
-        )
+    #     final_destination.parent.mkdir(parents=True, exist_ok=True)
+    #     shutil.move(
+    #         Path(main_storage_file_path.parent.parent)
+    #         / Path(dmrg_results_saveable["initial_ket_storage"]),
+    #         final_destination,
+    #     )
 
-        final_destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.move(
-            Path(main_storage_file_path.parent.parent)
-            / Path(dmrg_results_saveable["ket_optimized_storage"]),
-            final_destination,
-        )
+    #     final_destination.parent.mkdir(parents=True, exist_ok=True)
+    #     shutil.move(
+    #         Path(main_storage_file_path.parent.parent)
+    #         / Path(dmrg_results_saveable["ket_optimized_storage"]),
+    #         final_destination,
+    #     )
 
     hdf5_io.save_many_variables_to_hdf5(
         hdf5_filepath=main_storage_file_path,

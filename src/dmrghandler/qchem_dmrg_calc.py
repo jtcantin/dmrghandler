@@ -172,6 +172,7 @@ def single_qchem_dmrg_calc(
     )
     wall_driver_initialize_system_start_time_ns = time.perf_counter_ns()
     cpu_driver_initialize_system_start_time_ns = time.process_time_ns()
+
     driver.initialize_system(
         n_sites=num_orbitals,
         n_elec=num_electrons,
@@ -186,6 +187,19 @@ def single_qchem_dmrg_calc(
         target=None,  # Default value
         hamil_init=True,  # Default value
     )
+    log.debug("DRIVER INPUTS HERE!!!!!")
+    log.debug(f"num_orbitals: {num_orbitals}")
+    log.debug(f"num_electrons: {num_electrons}")
+    log.debug(f"spin: {spin}")
+    log.debug(f"orb_sym: {orb_sym}")
+
+    log.debug("DRIVER INFO HERE!!!!!")
+    log.debug(f"driver.n_sites: {driver.n_sites}")
+    # log.debug(f"driver.n_sites: {dir(driver)}")
+    # log.debug(f"driver.n_elec: {driver.n_elec}")
+    # log.debug(f"driver.spin: {driver.spin}")
+    log.debug(f"driver.orb_sym: {driver.orb_sym}")
+
     wall_driver_initialize_system_end_time_ns = time.perf_counter_ns()
     cpu_driver_initialize_system_end_time_ns = time.process_time_ns()
 
