@@ -49,6 +49,20 @@ def dmrg_energy_extrapolation(
         )
         fit_parameters = result_obj.x
         energy_estimated = fit_parameters[-1]
+        rel_energies = (energies_dmrg - energy_estimated) / energy_estimated
+        if (rel_energies <= 0).any():
+            for iiter, val in enumerate(rel_energies):
+                if val <= 0:
+                    rel_energies[iiter] = np.abs(val) + 1e-16
+                    # if np.abs(val) < neg_log_threshold:
+                    #     rel_energies[iiter] = np.abs(val) + 1e-16
+                    # # print(f"val: {val}")
+                    # else:
+                    #     raise ValueError(
+                    #         f"Relative energy is less than or equal to zero. energies_dmrg: {energies_dmrg}, energy_estimated: {energy_estimated}\n"
+                    #         f"rel_energies: {rel_energies}\n"
+                    #     )
+        """      This block is the new version, but not passing tests   
         rel_energies = np.abs((energies_dmrg - energy_estimated) / energy_estimated)
         # if (rel_energies <= 0).any():
         #     for iiter, val in enumerate(rel_energies):
@@ -62,7 +76,7 @@ def dmrg_energy_extrapolation(
         #             #         f"Relative energy is less than or equal to zero. energies_dmrg: {energies_dmrg}, energy_estimated: {energy_estimated}\n"
         #             #         f"rel_energies: {rel_energies}\n"
         #             #     )
-
+        """
         ln_rel_energies = np.log(rel_energies)
         # if np.isnan(ln_rel_energies).any():
         #
@@ -108,7 +122,8 @@ def discarded_weight_extrapolation(
         R_squared: R^2 value of the fit
     """
     if past_parameters is None:
-        initial_guess = [0.25, 1.4, np.min(energies_dmrg) - 1e-3]
+        initial_guess = [0.25, 1.4, energies_dmrg[-1]]
+        # initial_guess = [0.25, 1.4, np.min(energies_dmrg) - 1e-3]
     else:
         initial_guess = past_parameters
 
@@ -302,8 +317,8 @@ def calc_coefficient_of_determination(
     """
     y_mean = np.mean(y_data)
     y_predicted = predictor_fcn(x_data, *predictor_fcn_args)
-    SS_tot = np.sum((y_data - y_mean) ** 2)   + 1e-16
-    SS_res = np.sum((y_data - y_predicted) ** 2)   + 1e-16
+    SS_tot = np.sum((y_data - y_mean) ** 2) + 1e-16
+    SS_res = np.sum((y_data - y_predicted) ** 2) + 1e-16
     R_squared = 1 - SS_res / SS_tot
     if np.isnan(R_squared):
         raise ValueError(
