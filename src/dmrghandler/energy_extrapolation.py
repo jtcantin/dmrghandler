@@ -1,5 +1,8 @@
 import logging
 
+import scipy.linalg
+import scipy.stats
+
 log = logging.getLogger(__name__)
 from pathlib import Path
 from typing import List
@@ -46,19 +49,19 @@ def dmrg_energy_extrapolation(
         )
         fit_parameters = result_obj.x
         energy_estimated = fit_parameters[-1]
-        rel_energies = (energies_dmrg - energy_estimated) / energy_estimated
-        if (rel_energies <= 0).any():
-            for iiter, val in enumerate(rel_energies):
-                if val <= 0:
-                    rel_energies[iiter] = np.abs(val) + 1e-16
-                    # if np.abs(val) < neg_log_threshold:
-                    #     rel_energies[iiter] = np.abs(val) + 1e-16
-                    # # print(f"val: {val}")
-                    # else:
-                    #     raise ValueError(
-                    #         f"Relative energy is less than or equal to zero. energies_dmrg: {energies_dmrg}, energy_estimated: {energy_estimated}\n"
-                    #         f"rel_energies: {rel_energies}\n"
-                    #     )
+        rel_energies = np.abs((energies_dmrg - energy_estimated) / energy_estimated)
+        # if (rel_energies <= 0).any():
+        #     for iiter, val in enumerate(rel_energies):
+        #         if val <= 0:
+        #             rel_energies[iiter] = np.abs(val) + 1e-16
+        #             # if np.abs(val) < neg_log_threshold:
+        #             #     rel_energies[iiter] = np.abs(val) + 1e-16
+        #             # # print(f"val: {val}")
+        #             # else:
+        #             #     raise ValueError(
+        #             #         f"Relative energy is less than or equal to zero. energies_dmrg: {energies_dmrg}, energy_estimated: {energy_estimated}\n"
+        #             #         f"rel_energies: {rel_energies}\n"
+        #             #     )
 
         ln_rel_energies = np.log(rel_energies)
         # if np.isnan(ln_rel_energies).any():
@@ -72,7 +75,7 @@ def dmrg_energy_extrapolation(
         R_squared = calc_coefficient_of_determination(
             x_data=independent_vars,
             y_data=ln_rel_energies,
-            predictor_fcn=discarded_weight_predictor,
+            predictor_fcn=discarded_weight_predictor_ln,
             predictor_fcn_args=(fit_parameters[0], fit_parameters[1]),
         )
     else:
@@ -116,7 +119,7 @@ def discarded_weight_extrapolation(
         # jac=discarded_weight_residuals_gradient_matrix,
         jac="3-point",
         bounds=(
-            [0, 0, -np.inf],
+            [-np.inf, 0, -np.inf],
             [np.inf, np.inf, np.min(energies_dmrg)],
         ),  # alpha, b, E_estimated
         # np.inf >= alpha = exp(a) >= 0
@@ -302,8 +305,8 @@ def calc_coefficient_of_determination(
     """
     y_mean = np.mean(y_data)
     y_predicted = predictor_fcn(x_data, *predictor_fcn_args)
-    SS_tot = np.sum((y_data - y_mean) ** 2) + 1e-16
-    SS_res = np.sum((y_data - y_predicted) ** 2) + 1e-16
+    SS_tot = np.sum((y_data - y_mean) ** 2)  # + 1e-16
+    SS_res = np.sum((y_data - y_predicted) ** 2)  # + 1e-16
     R_squared = 1 - SS_res / SS_tot
     if np.isnan(R_squared):
         raise ValueError(
@@ -327,6 +330,24 @@ def discarded_weight_predictor(discarded_weights, alpha, b):
         predicted_relative energies: list of predicted ln ΔE_rel
     """
     a = np.log(alpha)  # α = exp(a), np.log is the natural logarithm
+    ln_del_E_rel = a + b * np.log(discarded_weights)
+    return ln_del_E_rel
+
+
+def discarded_weight_predictor_ln(discarded_weights, a, b):
+    """
+    Predict the relative energy from the discarded weight using the extrapolation function.
+    ln ΔE_rel =a+b ln(δϵ)
+
+    Args:
+        discarded_weights: list of discarded_weights
+        a: fit parameter
+        b: fit parameter
+        E_estimated: fit parameter, energy to be estimated
+
+    Returns:
+        predicted_relative energies: list of predicted ln ΔE_rel
+    """
     ln_del_E_rel = a + b * np.log(discarded_weights)
     return ln_del_E_rel
 
@@ -513,3 +534,71 @@ def plot_extrapolation(
         plot_filename_path = Path(str(plot_filename) + "_EDMRG_bond_dims.pdf")
         plot_filename_path.parent.mkdir(parents=True, exist_ok=True)
         fig.savefig(plot_filename_path, format="pdf", dpi=300)
+
+
+def bond_dimension_fitting(
+    bond_dims, dmrg_energies, exact_energy, extrap_threshold=1e-3
+):
+    # Using Eqn 14 of http://dx.doi.org/10.1016/j.cpc.2014.01.019
+    y_values = np.array(dmrg_energies)
+    y_values = np.log(y_values - exact_energy)  # natural log
+
+    x_values = np.array(bond_dims)
+    x_values = (np.log(x_values)) ** 2  # natural log
+
+    # Fit the data to a line using scipy
+    result = scipy.stats.linregress(x_values, y_values)
+    slope = result.slope
+    intercept = result.intercept
+    R_squared = result.rvalue**2
+    slope_stderr = result.stderr
+    intercept_stderr = result.intercept_stderr
+
+    # Extrapolate the bond dimension to E - E_exact = extrap_threshold
+    exponent = np.sqrt((np.log(extrap_threshold) - intercept) / slope)
+
+    # Ensure that the exponent is real and positive
+    assert np.isreal(exponent), f"Exponent is complex: {exponent}"
+    assert (
+        exponent >= 0
+    ), f"Exponent is negative: {exponent}, {extrap_threshold}, {intercept}, {slope}, (x_values, y_values): ({x_values}, {y_values})"
+
+    extrapolated_bd = np.exp(exponent)
+
+    # Calculate the error on the extrapolated bond dimension
+    max_intercept = intercept + 1.96 * intercept_stderr
+    min_intercept = intercept - 1.96 * intercept_stderr
+    max_slope = slope + 1.96 * slope_stderr
+    min_slope = slope - 1.96 * slope_stderr
+    pos_pos_bd = np.exp(np.sqrt((np.log(extrap_threshold) - max_intercept) / max_slope))
+    pos_neg_bd = np.exp(np.sqrt((np.log(extrap_threshold) - min_intercept) / max_slope))
+    neg_pos_bd = np.exp(np.sqrt((np.log(extrap_threshold) - max_intercept) / min_slope))
+    neg_neg_bd = np.exp(np.sqrt((np.log(extrap_threshold) - min_intercept) / min_slope))
+    max_bd = max(pos_pos_bd, pos_neg_bd, neg_pos_bd, neg_neg_bd)
+    min_bd = min(pos_pos_bd, pos_neg_bd, neg_pos_bd, neg_neg_bd)
+
+    return (
+        slope,
+        intercept,
+        R_squared,
+        slope_stderr,
+        intercept_stderr,
+        extrapolated_bd,
+        max_bd,
+        min_bd,
+    )
+
+
+def discarded_weight_linear_fitting(discarded_weights, dmrg_energies):
+    y_values = np.array(dmrg_energies)
+    x_values = np.array(discarded_weights)
+
+    # Fit the data to a line using scipy
+    result = scipy.stats.linregress(x_values, y_values)
+    slope = result.slope
+    intercept = result.intercept
+    R_squared = result.rvalue**2
+    slope_stderr = result.stderr
+    intercept_stderr = result.intercept_stderr
+
+    return slope, intercept, R_squared, slope_stderr, intercept_stderr

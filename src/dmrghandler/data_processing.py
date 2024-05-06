@@ -450,7 +450,7 @@ def add_dmrg_processing_basic(
     )
 
 
-def setup_workbook(data_file_path, data_dict_list, workbook):
+def setup_workbook(data_file_path, data_dict_list, workbook, csv_storage_path="./"):
     for data_dict in data_dict_list:
         data_file = (
             data_file_path / Path(data_dict["Calc UUID"]) / Path("dmrg_results.hdf5")
@@ -503,4 +503,32 @@ def setup_workbook(data_file_path, data_dict_list, workbook):
             loop_cpu_times_s=loop_cpu_times_s,
             loop_wall_times_s=loop_wall_times_s,
             data_dict=data_dict,
+        )
+
+        # Save performance metrics to csv
+        csv_storage_path = Path(csv_storage_path)
+        csv_storage_path.mkdir(parents=True, exist_ok=True)
+        fcidump_name = data_dict["fcidump"]
+        csv_filename = Path(fcidump_name + ".csv")
+        csv_data_array = np.vstack(
+            [
+                dmrg_energies,
+                bond_dimensions,
+                discarded_weights,
+                loop_cpu_times_s,
+                loop_wall_times_s,
+            ]
+        )
+        csv_data_array = csv_data_array.T
+        header = "DMRG Energy, Bond Dimension, Discarded Weights, CPU Time (s), Wall Time (s)"
+        np.savetxt(
+            csv_storage_path / csv_filename,
+            csv_data_array,
+            fmt="%.18e",
+            delimiter=",",
+            newline="\n",
+            header=header,
+            footer="",
+            comments="# ",
+            encoding=None,
         )
