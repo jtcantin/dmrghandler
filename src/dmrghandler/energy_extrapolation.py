@@ -75,7 +75,7 @@ def dmrg_energy_extrapolation(
         R_squared = calc_coefficient_of_determination(
             x_data=independent_vars,
             y_data=ln_rel_energies,
-            predictor_fcn=discarded_weight_predictor_ln,
+            predictor_fcn=discarded_weight_predictor,
             predictor_fcn_args=(fit_parameters[0], fit_parameters[1]),
         )
     else:
@@ -114,14 +114,11 @@ def discarded_weight_extrapolation(
 
     # print(f"Initial guess: {initial_guess}")
     result_obj = scipy.optimize.least_squares(
-        fun=discarded_weight_residuals_function_ln,
+        fun=discarded_weight_residuals_function,
         x0=initial_guess,
         # jac=discarded_weight_residuals_gradient_matrix,
         jac="3-point",
-        bounds=(
-            [-np.inf, 0, -np.inf],
-            [np.inf, np.inf, np.min(energies_dmrg)],
-        ),  # alpha, b, E_estimated
+        bounds=([0, 0, -np.inf], [np.inf, np.inf, np.inf]),  # alpha, b, E_estimated
         # np.inf >= alpha = exp(a) >= 0
         # b >= 0 as it is required δϵ^b -> 0 as δϵ -> 0
         method="dogbox",  # Recommended by Scipy for small problems with bounds
@@ -305,8 +302,8 @@ def calc_coefficient_of_determination(
     """
     y_mean = np.mean(y_data)
     y_predicted = predictor_fcn(x_data, *predictor_fcn_args)
-    SS_tot = np.sum((y_data - y_mean) ** 2)  # + 1e-16
-    SS_res = np.sum((y_data - y_predicted) ** 2)  # + 1e-16
+    SS_tot = np.sum((y_data - y_mean) ** 2)   + 1e-16
+    SS_res = np.sum((y_data - y_predicted) ** 2)   + 1e-16
     R_squared = 1 - SS_res / SS_tot
     if np.isnan(R_squared):
         raise ValueError(
