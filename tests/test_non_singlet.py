@@ -79,6 +79,7 @@ class TestNonSinglet(unittest.TestCase):
             "symmetry_type_list": ["SU(2)"],
             "num_threads_list": [4],
             "n_mkl_threads_list": [1],
+            "track_mem": [True],
         }
 
         dmrg_advanced_config = {

@@ -111,11 +111,12 @@ class TestDmrgSmallMolecule(unittest.TestCase):
         }
         one_body_tensor_sz = [one_body_tensor, one_body_tensor]
         two_body_tensor_sz = [two_body_tensor, two_body_tensor, two_body_tensor]
-        dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc(
+        dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc_mem_tracking(
             one_body_tensor=one_body_tensor_sz,
             two_body_tensor=two_body_tensor_sz,
             dmrg_parameters=dmrg_parameters,
             verbosity=2,
+            track_mem=True,
         )
 
         npt.assert_allclose(
@@ -210,11 +211,12 @@ class TestDmrgSmallMolecule(unittest.TestCase):
             "stack_mem_ratio": 0.75,  # Default is 0.4
         }
 
-        dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc(
+        dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc_mem_tracking(
             one_body_tensor=one_body_tensor,
             two_body_tensor=two_body_tensor,
             dmrg_parameters=dmrg_parameters,
             verbosity=2,
+            track_mem=True,
         )
 
         npt.assert_allclose(
@@ -310,11 +312,12 @@ class TestDmrgSmallMolecule(unittest.TestCase):
         }
         one_body_tensor_sz = [one_body_tensor, one_body_tensor]
         two_body_tensor_sz = [two_body_tensor, two_body_tensor, two_body_tensor]
-        dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc(
+        dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc_mem_tracking(
             one_body_tensor=one_body_tensor_sz,
             two_body_tensor=two_body_tensor_sz,
             dmrg_parameters=dmrg_parameters,
             verbosity=2,
+            track_mem=True,
         )
 
         npt.assert_allclose(
@@ -409,11 +412,12 @@ class TestDmrgSmallMolecule(unittest.TestCase):
             "stack_mem_ratio": 0.4,  # Default is 0.4
         }
 
-        dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc(
+        dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc_mem_tracking(
             one_body_tensor=one_body_tensor,
             two_body_tensor=two_body_tensor,
             dmrg_parameters=dmrg_parameters,
             verbosity=2,
+            track_mem=True,
         )
 
         npt.assert_allclose(
@@ -509,11 +513,12 @@ class TestDmrgSmallMolecule(unittest.TestCase):
         }
         one_body_tensor_sz = [one_body_tensor, one_body_tensor]
         two_body_tensor_sz = [two_body_tensor, two_body_tensor, two_body_tensor]
-        dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc(
+        dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc_mem_tracking(
             one_body_tensor=one_body_tensor_sz,
             two_body_tensor=two_body_tensor_sz,
             dmrg_parameters=dmrg_parameters,
             verbosity=2,
+            track_mem=True,
         )
 
         npt.assert_allclose(
@@ -608,11 +613,12 @@ class TestDmrgSmallMolecule(unittest.TestCase):
             "stack_mem_ratio": 0.4,  # Default is 0.4
         }
 
-        dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc(
+        dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc_mem_tracking(
             one_body_tensor=one_body_tensor,
             two_body_tensor=two_body_tensor,
             dmrg_parameters=dmrg_parameters,
             verbosity=2,
+            track_mem=True,
         )
 
         npt.assert_allclose(
@@ -708,11 +714,12 @@ class TestDmrgSmallMolecule(unittest.TestCase):
         }
         one_body_tensor_sz = [one_body_tensor, one_body_tensor]
         two_body_tensor_sz = [two_body_tensor, two_body_tensor, two_body_tensor]
-        dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc(
+        dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc_mem_tracking(
             one_body_tensor=one_body_tensor_sz,
             two_body_tensor=two_body_tensor_sz,
             dmrg_parameters=dmrg_parameters,
             verbosity=2,
+            track_mem=True,
         )
 
         npt.assert_allclose(
@@ -807,11 +814,12 @@ class TestDmrgSmallMolecule(unittest.TestCase):
             "stack_mem_ratio": 0.4,  # Default is 0.4
         }
 
-        dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc(
+        dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc_mem_tracking(
             one_body_tensor=one_body_tensor,
             two_body_tensor=two_body_tensor,
             dmrg_parameters=dmrg_parameters,
             verbosity=2,
+            track_mem=True,
         )
 
         npt.assert_allclose(
@@ -907,11 +915,12 @@ class TestDmrgSmallMolecule(unittest.TestCase):
         }
         one_body_tensor_sz = [one_body_tensor, one_body_tensor]
         two_body_tensor_sz = [two_body_tensor, two_body_tensor, two_body_tensor]
-        dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc(
+        dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc_mem_tracking(
             one_body_tensor=one_body_tensor_sz,
             two_body_tensor=two_body_tensor_sz,
             dmrg_parameters=dmrg_parameters,
             verbosity=2,
+            track_mem=True,
         )
 
         npt.assert_allclose(
@@ -1007,11 +1016,12 @@ class TestDmrgSmallMolecule(unittest.TestCase):
             "stack_mem_ratio": 0.4,  # Default is 0.4
         }
 
-        dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc(
+        dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc_mem_tracking(
             one_body_tensor=one_body_tensor,
             two_body_tensor=two_body_tensor,
             dmrg_parameters=dmrg_parameters,
             verbosity=2,
+            track_mem=True,
         )
 
         self.assertTrue(
@@ -1112,11 +1122,12 @@ class TestDmrgSmallMolecule(unittest.TestCase):
             "stack_mem_ratio": 0.4,  # Default is 0.4
         }
 
-        dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc(
+        dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc_mem_tracking(
             one_body_tensor=one_body_tensor,
             two_body_tensor=two_body_tensor,
             dmrg_parameters=dmrg_parameters,
             verbosity=2,
+            track_mem=True,
         )
 
         npt.assert_allclose(
@@ -1212,11 +1223,12 @@ class TestDmrgSmallMolecule(unittest.TestCase):
         }
         one_body_tensor_sz = [one_body_tensor, one_body_tensor]
         two_body_tensor_sz = [two_body_tensor, two_body_tensor, two_body_tensor]
-        dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc(
+        dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc_mem_tracking(
             one_body_tensor=one_body_tensor_sz,
             two_body_tensor=two_body_tensor_sz,
             dmrg_parameters=dmrg_parameters,
             verbosity=2,
+            track_mem=True,
         )
 
         npt.assert_allclose(
@@ -1311,11 +1323,12 @@ class TestDmrgSmallMolecule(unittest.TestCase):
             "stack_mem_ratio": 0.4,  # Default is 0.4
         }
 
-        dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc(
+        dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc_mem_tracking(
             one_body_tensor=one_body_tensor,
             two_body_tensor=two_body_tensor,
             dmrg_parameters=dmrg_parameters,
             verbosity=2,
+            track_mem=True,
         )
 
         npt.assert_allclose(
@@ -1422,11 +1435,12 @@ class TestDmrgSmallMolecule(unittest.TestCase):
         }
         one_body_tensor_sz = [one_body_tensor, one_body_tensor]
         two_body_tensor_sz = [two_body_tensor, two_body_tensor, two_body_tensor]
-        dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc(
+        dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc_mem_tracking(
             one_body_tensor=one_body_tensor_sz,
             two_body_tensor=two_body_tensor_sz,
             dmrg_parameters=dmrg_parameters,
             verbosity=2,
+            track_mem=True,
         )
 
         npt.assert_allclose(
@@ -1524,11 +1538,12 @@ class TestDmrgSmallMolecule(unittest.TestCase):
             "stack_mem_ratio": 0.4,  # Default is 0.4
         }
 
-        dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc(
+        dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc_mem_tracking(
             one_body_tensor=one_body_tensor,
             two_body_tensor=two_body_tensor,
             dmrg_parameters=dmrg_parameters,
             verbosity=2,
+            track_mem=True,
         )
 
         npt.assert_allclose(

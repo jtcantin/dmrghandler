@@ -99,6 +99,7 @@ def save_dmrg_configuration_data(config_file: str, data: dict):
             "min_energy_change_hartree",
             "extrapolation_type",
             "starting_bond_dimension",
+            "track_mem",
         ],
     )
 
@@ -229,12 +230,14 @@ def gen_config_files(
         starting_bond_dimension = common_or_list(
             config_dict["starting_bond_dimension_list"], data_iter
         )
+        track_mem = common_or_list(config_dict["track_mem"], data_iter)
         looping_config = {
             "max_bond_dimension": max_bond_dimension,
             "max_time_limit_sec": max_time_limit_sec,
             "min_energy_change_hartree": min_energy_change_hartree,
             "extrapolation_type": extrapolation_type,
             "starting_bond_dimension": starting_bond_dimension,
+            "track_mem": track_mem,
         }
 
         max_num_sweeps = common_or_list(config_dict["max_num_sweeps_list"], data_iter)

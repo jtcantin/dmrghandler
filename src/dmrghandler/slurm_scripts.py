@@ -278,8 +278,9 @@ if __name__ == "__main__":
     max_bond_dimension = looping_parameters["max_bond_dimension"]
     max_time_limit_sec = looping_parameters["max_time_limit_sec"]
     min_energy_change_hartree = looping_parameters["min_energy_change_hartree"]
+    track_mem = looping_parameters["track_mem"]
     main_storage_folder_path = data_config["main_storage_folder_path"]
-    loop_results = dmrg_looping.dmrg_central_loop(
+    loop_results = dmrg_looping.dmrg_central_loop_mem_tracking(
         one_body_tensor=one_body_tensor,
         two_body_tensor=two_body_tensor,
         dmrg_parameters=dmrg_parameters,
@@ -288,7 +289,8 @@ if __name__ == "__main__":
         min_energy_change_hartree=min_energy_change_hartree,
         main_storage_folder_path=main_storage_folder_path,
         verbosity=2,
-        mps_final_storage_path=os.environ['SCRATCH']
+        mps_final_storage_path=os.environ['SCRATCH'],
+        track_mem=track_mem,
     )
 
     wall_time_dmrg_loop_done_ns = time.perf_counter_ns()

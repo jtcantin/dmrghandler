@@ -108,6 +108,7 @@ class TestDmrgSinglePythonRun(unittest.TestCase):
             "symmetry_type_list": ["SU(2)"],
             "num_threads_list": [1],
             "n_mkl_threads_list": [1],
+            "track_mem": [True],
         }
 
         config_files_list, config_dict_single_file_list = config_io.gen_config_files(
@@ -151,7 +152,7 @@ class TestDmrgSinglePythonRun(unittest.TestCase):
             max_time_limit_sec = looping_parameters["max_time_limit_sec"]
             min_energy_change_hartree = looping_parameters["min_energy_change_hartree"]
             main_storage_folder_path = data_config["main_storage_folder_path"]
-            loop_results = dmrg_looping.dmrg_central_loop(
+            loop_results = dmrg_looping.dmrg_central_loop_mem_tracking(
                 one_body_tensor=one_body_tensor,
                 two_body_tensor=two_body_tensor,
                 dmrg_parameters=dmrg_parameters,
@@ -161,6 +162,7 @@ class TestDmrgSinglePythonRun(unittest.TestCase):
                 main_storage_folder_path=main_storage_folder_path,
                 verbosity=2,
                 mps_final_storage_path="i_moved_myself",
+                track_mem=True,
             )
 
             finish_reason = loop_results["finish_reason"]

@@ -125,7 +125,7 @@ class TestDmrgLoopingSmallMolecule(unittest.TestCase):
             / uuid_main_storage_folder_path
         )
 
-        loop_results = dmrg_looping.dmrg_central_loop(
+        loop_results = dmrg_looping.dmrg_central_loop_mem_tracking(
             one_body_tensor=one_body_tensor,
             two_body_tensor=two_body_tensor,
             dmrg_parameters=dmrg_parameters,
@@ -134,6 +134,7 @@ class TestDmrgLoopingSmallMolecule(unittest.TestCase):
             min_energy_change_hartree=min_energy_change_hartree,
             main_storage_folder_path=uuid_main_storage_folder_path,
             verbosity=2,
+            track_mem=True,
         )
 
         finish_reason = loop_results["finish_reason"]

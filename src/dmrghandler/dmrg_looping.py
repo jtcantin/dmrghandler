@@ -11,6 +11,7 @@ import numpy as np
 import pyblock2.tools
 from block2 import SU2 as block2_SU2
 from block2 import SZ as block2_SZ
+from memory_profiler import profile as mem_profile
 
 import dmrghandler.energy_extrapolation as energy_extrapolation
 import dmrghandler.hdf5_io as hdf5_io
@@ -18,6 +19,13 @@ import dmrghandler.qchem_dmrg_calc as qchem_dmrg_calc
 from dmrghandler.profiling import print_system_info
 
 log = logging.getLogger(__name__)
+
+
+def dmrg_central_loop_mem_tracking(*args, track_mem=False, **kwargs):
+    if track_mem:
+        return mem_profile(dmrg_central_loop)(*args, track_mem=track_mem, **kwargs)
+    else:
+        return dmrg_central_loop(*args, track_mem=track_mem, **kwargs)
 
 
 def dmrg_central_loop(
@@ -30,6 +38,7 @@ def dmrg_central_loop(
     main_storage_folder_path: str,
     verbosity: int = 0,
     mps_final_storage_path="./",
+    track_mem=False,
 ):
     wall_time_start_ns = time.perf_counter_ns()
     cpu_time_start_ns = time.process_time_ns()
@@ -76,11 +85,12 @@ def dmrg_central_loop(
     )
     wall_first_preloop_start_ns = time.perf_counter_ns()
     cpu_first_preloop_start_ns = time.process_time_ns()
-    dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc(
+    dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc_mem_tracking(
         one_body_tensor=one_body_tensor,
         two_body_tensor=two_body_tensor,
         dmrg_parameters=dmrg_parameters,
         verbosity=verbosity,
+        track_mem=track_mem,
     )
     log.info("Finished first preloop calc")
     wall_first_preloop_end_ns = time.perf_counter_ns()
@@ -149,11 +159,12 @@ def dmrg_central_loop(
     )
     wall_second_preloop_start_ns = time.perf_counter_ns()
     cpu_second_preloop_start_ns = time.process_time_ns()
-    dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc(
+    dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc_mem_tracking(
         one_body_tensor=one_body_tensor,
         two_body_tensor=two_body_tensor,
         dmrg_parameters=dmrg_parameters,
         verbosity=verbosity,
+        track_mem=track_mem,
     )
 
     log.info("Finished second preloop calc")
@@ -244,6 +255,7 @@ def dmrg_central_loop(
             past_parameters=past_parameters,
             verbosity=verbosity,
             move_mps_to_final_storage_path=mps_final_storage_path,
+            track_mem=track_mem,
         )
         wall_dmrg_loop_end_ns = time.perf_counter_ns()
         cpu_dmrg_loop_end_ns = time.process_time_ns()
@@ -350,6 +362,7 @@ def dmrg_loop_function(
     past_parameters: np.ndarray = None,
     verbosity: int = 0,
     move_mps_to_final_storage_path=None,
+    track_mem=False,
 ):
     # Update bond dimension
     sweep_schedule_bond_dims = dmrg_parameters["sweep_schedule_bond_dims"]
@@ -363,11 +376,12 @@ def dmrg_loop_function(
     dmrg_parameters["init_state_bond_dimension"] = init_state_bond_dimension
 
     # Run DMRG
-    dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc(
+    dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc_mem_tracking(
         one_body_tensor=one_body_tensor,
         two_body_tensor=two_body_tensor,
         dmrg_parameters=dmrg_parameters,
         verbosity=verbosity,
+        track_mem=track_mem,
     )
 
     # Perform extrapolation

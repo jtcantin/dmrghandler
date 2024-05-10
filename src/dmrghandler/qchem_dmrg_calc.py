@@ -9,6 +9,7 @@ import time
 
 log = logging.getLogger(__name__)
 import numpy as np
+from memory_profiler import profile as mem_profile
 from pyblock2.driver.core import DMRGDriver, SymmetryTypes
 
 from dmrghandler.profiling import print_system_info
@@ -19,6 +20,13 @@ default_sweep_schedule_bond_dims = [default_final_bond_dim] * 4 + [
 ] * 4
 default_sweep_schedule_noise = [1e-4] * 4 + [1e-5] * 4 + [0]
 default_sweep_schedule_davidson_threshold = [1e-10] * 8
+
+
+def single_qchem_dmrg_calc_mem_tracking(*args, track_mem=False, **kwargs):
+    if track_mem:
+        return mem_profile(single_qchem_dmrg_calc)(*args, **kwargs)
+    else:
+        return single_qchem_dmrg_calc(*args, **kwargs)
 
 
 def single_qchem_dmrg_calc(
