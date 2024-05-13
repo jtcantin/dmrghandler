@@ -11,7 +11,9 @@ import numpy as np
 import pyblock2.tools
 from block2 import SU2 as block2_SU2
 from block2 import SZ as block2_SZ
-from memory_profiler import profile as mem_profile
+
+# from memory_profiler import profile as mem_profile
+from memory_profiler import memory_usage
 
 import dmrghandler.energy_extrapolation as energy_extrapolation
 import dmrghandler.hdf5_io as hdf5_io
@@ -23,7 +25,47 @@ log = logging.getLogger(__name__)
 
 def dmrg_central_loop_mem_tracking(*args, track_mem=False, **kwargs):
     if track_mem:
-        return mem_profile(dmrg_central_loop)(*args, track_mem=track_mem, **kwargs)
+        # return mem_profile(dmrg_central_loop)(*args, track_mem=track_mem, **kwargs)
+        mem_data, retval = memory_usage(
+            proc=(dmrg_central_loop, args, kwargs),
+            interval=0.1,
+            timeout=None,
+            timestamps=True,
+            include_children=True,
+            multiprocess=False,
+            max_usage=False,
+            retval=True,
+            stream=None,
+            backend=None,
+            max_iterations=None,
+        )
+
+        log.info(f"Memory usage (MiB, Timestamp (sec)): {mem_data}")
+        # print(f"Memory usage: {mem_data}")
+        memory_MiB_list = []
+        time_stamp_sec_list = []
+        for mem, time_stamp in mem_data:
+            memory_MiB_list.append(mem)
+            time_stamp_sec_list.append(time_stamp)
+        memory_MiB_array = np.array(memory_MiB_list)
+        time_stamp_sec_array = np.array(time_stamp_sec_list)
+
+        memory_tracking_data = {
+            "memory_MiB_array": memory_MiB_array,
+            "time_stamp_array": time_stamp_sec_array,
+            "max_memory_MiB": np.amax(memory_MiB_array),
+        }
+        main_storage_folder_path = kwargs["main_storage_folder_path"]
+        main_storage_folder_path = Path(main_storage_folder_path)
+        main_storage_file_path = main_storage_folder_path / "dmrg_results.hdf5"
+        hdf5_io.save_many_variables_to_hdf5(
+            hdf5_filepath=main_storage_file_path,
+            variables=memory_tracking_data,
+            access_mode="a",
+            group=f"memory_tracking_data",
+            overwrite=False,
+        )
+        return retval
     else:
         return dmrg_central_loop(*args, track_mem=track_mem, **kwargs)
 

@@ -194,3 +194,4 @@ examples/extract_process_dmrg_results_mo_n2_schrock.ipynb
 examples/extract_process_dmrg_results_small_catalysts.ipynb
 examples/extract_process_21_29_rerun.ipynb
 examples/extrapolation_planted_solutions.ipynb
+run_command_mem_recording.txt
