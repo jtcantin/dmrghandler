@@ -153,10 +153,14 @@ echo $SLURMD_NODENAME
 echo ' '
 echo 'Single run of DMRG calculations beginning'
 echo ' '
+free -kt
+cat /proc/meminfo
 python {python_run_file} &
 wait
 echo ' '
 echo 'Single run of DMRG calculations done'
+free -kt
+cat /proc/meminfo
 echo ' '
 
 #Copy output to project directory

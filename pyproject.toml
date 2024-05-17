@@ -17,6 +17,7 @@ openfermion = "^1.6.1"
 notebook = "^7.1.2"
 openpyxl = "^3.1.2"
 memory-profiler = "^0.61.0"
+ipympl = "^0.9.4"
 
 [tool.poetry.dev-dependencies]
 

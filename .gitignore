@@ -195,3 +195,8 @@ examples/extract_process_dmrg_results_small_catalysts.ipynb
 examples/extract_process_21_29_rerun.ipynb
 examples/extrapolation_planted_solutions.ipynb
 run_command_mem_recording.txt
+mem_plot.py
+examples/plotting_pres.ipynb
+examples/extrapolation_pres.ipynb
+mem_investigation_31.ipynb
+mem_investigation_24.ipynb
