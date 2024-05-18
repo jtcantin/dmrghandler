@@ -173,6 +173,65 @@ def dmrg_central_loop(
     log.info(
         f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
     )
+
+    if "do_single_calc" in dmrg_parameters.keys() and dmrg_parameters["do_single_calc"]:
+        loop_results = {
+            "energy_estimated": energies_dmrg,  # energy_estimated,
+            "fit_parameters": [0, 0, 0],  # fit_parameters,
+            "R_squared": 0,  # R_squared,
+            "energies_dmrg": energies_dmrg,  # past_energies_dmrg,
+            "discarded_weights": discarded_weights,  # past_discarded_weights,
+            # "result_storage_dict": result_storage_dict,
+            "wall_time_loop_s": wall_first_preloop_ns / 1e9,
+            "cpu_time_loop_s": cpu_first_preloop_ns / 1e9,
+            "energy_change": 9999999,  # energy_change,
+            "discard_weight_change": 9999999,  # discard_weight_change,
+            "finish_reason": "Single calc",  # finish_reason,
+            "past_energies_dmrg": [energies_dmrg],  # past_energies_dmrg,
+            "past_discarded_weights": [discarded_weights],  # past_discarded_weights,
+            "bond_dims_used": [bond_dims_used],
+            "loop_entry_count": 0,  # loop_entry_count,
+            "unmodified_fit_parameters_list": [
+                [0, 0, 0]
+            ],  # unmodified_fit_parameters_list,
+            "fit_parameters_list": [[0, 0, 0]],  # fit_parameters_list,
+            # "final_dmrg_results": dmrg_results,
+            "wall_dmrg_whole_calc_times_s": wall_dmrg_whole_calc_times_s,
+            "cpu_dmrg_whole_calc_times_s": cpu_dmrg_whole_calc_times_s,
+            "wall_dmrg_optimization_times_s": wall_dmrg_optimization_times_s,
+            "cpu_dmrg_optimization_times_s": cpu_dmrg_optimization_times_s,
+        }
+        hdf5_io.save_many_variables_to_hdf5(
+            hdf5_filepath=main_storage_file_path,
+            variables=loop_results,
+            access_mode="a",
+            group=f"first_preloop_calc/loop_results",
+            overwrite=False,
+        )
+
+        result_storage_dict = {
+            "sweep_schedule_bond_dims": dmrg_parameters[
+                "sweep_schedule_bond_dims"
+            ],  # sweep_schedule_bond_dims,
+            "init_state_bond_dimension": dmrg_parameters[
+                "init_state_bond_dimension"
+            ],  # init_state_bond_dimension,
+            "energy_estimated": energies_dmrg,  # energy_estimated,
+            "fit_parameters": [0, 0, 0],  # fit_parameters,
+            "R_squared": 0,  # R_squared,
+            "fit_energy_replaced_by_dmrg_bool": False,  # fit_energy_replaced_by_dmrg,
+            "wall_extrapolation_s": 0,  # wall_extrapolation_ns / 1e9,
+            "cpu_extrapolation_s": 0,  # cpu_extrapolation_ns / 1e9,
+        }
+
+        loop_results["result_storage_dict"] = result_storage_dict
+
+        print_system_info(
+            f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
+        )
+
+        return loop_results
+
     after_first_preloop_ns = time.perf_counter_ns() - wall_time_start_ns
     if after_first_preloop_ns > max_time_limit_sec * 1e9:
         raise Exception(

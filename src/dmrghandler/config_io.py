@@ -244,12 +244,20 @@ def gen_config_files(
         energy_convergence_threshold = common_or_list(
             config_dict["energy_convergence_threshold_list"], data_iter
         )
-        sweep_schedule_bond_dims = generate_sweep_schedule(
-            common_or_list(
+        if (
+            "do_single_calc" in dmrg_advanced_config
+            and dmrg_advanced_config["do_single_calc"]
+        ):
+            sweep_schedule_bond_dims = common_or_list(
                 config_dict["sweep_schedule_bond_dims_parameters"], data_iter
-            ),
-            starting_bond_dimension,
-        )
+            )
+        else:
+            sweep_schedule_bond_dims = generate_sweep_schedule(
+                common_or_list(
+                    config_dict["sweep_schedule_bond_dims_parameters"], data_iter
+                ),
+                starting_bond_dimension,
+            )
 
         sweep_schedule_noise = common_or_list(
             config_dict["sweep_schedule_noise_list"], data_iter
@@ -330,3 +338,24 @@ def generate_sweep_schedule(factor_count_tuples, starting_bond_dimension):
         sweep_schedule_bond_dims = sweep_schedule_bond_dims + new_sector
 
     return sweep_schedule_bond_dims
+
+
+def fwd_reverse_schedule(start_bd, num_points):
+    schedule = [start_bd // 2] * 4 + [start_bd] * 5
+    for i in range(num_points):
+        schedule += [int((0.9091 ** (i + 1)) * start_bd)] * 8
+    return schedule
+
+
+def fwd_reverse_schedule_noise(noise_1, noise_2, num_points):
+    schedule = [noise_1] * 4 + [noise_2] * 4 + [0]
+    for i in range(num_points):
+        schedule += [0] * 8
+    return schedule
+
+
+def fwd_reverse_schedule_threshold(thresh, num_points):
+    schedule = [thresh] * 9
+    for i in range(num_points):
+        schedule += [thresh] * 8
+    return schedule
