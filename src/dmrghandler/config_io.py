@@ -281,6 +281,13 @@ def gen_config_files(
         num_threads = common_or_list(config_dict["num_threads_list"], data_iter)
         n_mkl_threads = common_or_list(config_dict["n_mkl_threads_list"], data_iter)
 
+        if "reordering_method_list" in config_dict:
+            reordering_method = common_or_list(
+                config_dict["reordering_method_list"], data_iter
+            )
+        else:
+            reordering_method = "none"
+
         dmrg_basic_config = {
             "max_num_sweeps": max_num_sweeps,
             "energy_convergence_threshold": energy_convergence_threshold,
@@ -290,7 +297,7 @@ def gen_config_files(
             "temp_dir": temp_dir,
             "restart_dir": None,
             # "mps_storage_folder",
-            "reordering_method": "none",
+            "reordering_method": reordering_method,
             "init_state_bond_dimension": init_state_bond_dimension,
             "init_state_seed": init_state_seed,
             "initial_mps_method": initial_mps_method,

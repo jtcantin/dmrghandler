@@ -178,6 +178,40 @@ def single_qchem_dmrg_calc(
     print_system_info(
         f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
     )
+    wall_reorder_integrals_start_time_ns = time.perf_counter_ns()
+    cpu_reorder_integrals_start_time_ns = time.process_time_ns()
+
+    (
+        one_body_tensor_reordered,
+        two_body_tensor_factor_half_reordered,
+        orb_sym_reordered,
+        reordering_indices,
+    ) = reorder_integrals(
+        one_body_tensor=one_body_tensor,
+        two_body_tensor_factor_half=two_body_tensor_factor_half,
+        orb_sym=orb_sym,
+        reordering_method=reordering_method,
+        driver=driver,
+        n_sites=num_orbitals,
+        n_elec=num_electrons,
+        spin=spin,
+        ecore=core_energy,
+        iprint=verbosity,
+        bond_dim=min(50, max(sweep_schedule_bond_dims)),
+    )
+    wall_reorder_integrals_end_time_ns = time.perf_counter_ns()
+    cpu_reorder_integrals_end_time_ns = time.process_time_ns()
+
+    wall_reorder_integrals_time_ns = (
+        wall_reorder_integrals_end_time_ns - wall_reorder_integrals_start_time_ns
+    )
+    cpu_reorder_integrals_time_ns = (
+        cpu_reorder_integrals_end_time_ns - cpu_reorder_integrals_start_time_ns
+    )
+
+    log.info(f"wall_reorder_integrals_time_s: {wall_reorder_integrals_time_ns/1e9}")
+    log.info(f"cpu_reorder_integrals_time_s: {cpu_reorder_integrals_time_ns/1e9}")
+
     wall_driver_initialize_system_start_time_ns = time.perf_counter_ns()
     cpu_driver_initialize_system_start_time_ns = time.process_time_ns()
 
@@ -185,7 +219,7 @@ def single_qchem_dmrg_calc(
         n_sites=num_orbitals,
         n_elec=num_electrons,
         spin=spin,
-        orb_sym=orb_sym,
+        orb_sym=orb_sym_reordered,
         heis_twos=-1,  # Default value
         heis_twosz=0,  # Default value
         singlet_embedding=True,  # Default value
@@ -199,7 +233,8 @@ def single_qchem_dmrg_calc(
     log.debug(f"num_orbitals: {num_orbitals}")
     log.debug(f"num_electrons: {num_electrons}")
     log.debug(f"spin: {spin}")
-    log.debug(f"orb_sym: {orb_sym}")
+    log.debug(f"orb_sym_reordered: {orb_sym_reordered}")
+    log.debug(f"reordering_indices: {reordering_indices}")
 
     log.debug("DRIVER INFO HERE!!!!!")
     log.debug(f"driver.n_sites: {driver.n_sites}")
@@ -226,30 +261,7 @@ def single_qchem_dmrg_calc(
     log.info(
         f"cpu_driver_initialize_system_time_s: {cpu_driver_initialize_system_time_ns/1e9}"
     )
-    print_system_info(
-        f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
-    )
-    wall_reorder_integrals_start_time_ns = time.perf_counter_ns()
-    cpu_reorder_integrals_start_time_ns = time.process_time_ns()
-    one_body_tensor_reordered, two_body_tensor_factor_half_reordered = (
-        reorder_integrals(
-            one_body_tensor=one_body_tensor,
-            two_body_tensor_factor_half=two_body_tensor_factor_half,
-            reordering_method=reordering_method,
-        )
-    )
-    wall_reorder_integrals_end_time_ns = time.perf_counter_ns()
-    cpu_reorder_integrals_end_time_ns = time.process_time_ns()
 
-    wall_reorder_integrals_time_ns = (
-        wall_reorder_integrals_end_time_ns - wall_reorder_integrals_start_time_ns
-    )
-    cpu_reorder_integrals_time_ns = (
-        cpu_reorder_integrals_end_time_ns - cpu_reorder_integrals_start_time_ns
-    )
-
-    log.info(f"wall_reorder_integrals_time_s: {wall_reorder_integrals_time_ns/1e9}")
-    log.info(f"cpu_reorder_integrals_time_s: {cpu_reorder_integrals_time_ns/1e9}")
     print_system_info(
         f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
     )
@@ -495,6 +507,8 @@ def single_qchem_dmrg_calc(
         "cpu_dmrg_optimization_time_s": cpu_dmrg_optimization_time_ns / 1e9,
         "wall_single_qchem_dmrg_calc_time_s": wall_single_qchem_dmrg_calc_time_ns / 1e9,
         "cpu_single_qchem_dmrg_calc_time_s": cpu_single_qchem_dmrg_calc_time_ns / 1e9,
+        "reordering_indices_used": reordering_indices,
+        "reordering_method_used": reordering_method,
     }
 
     return dmrg_results_dict
@@ -503,7 +517,15 @@ def single_qchem_dmrg_calc(
 def reorder_integrals(
     one_body_tensor: np.ndarray,
     two_body_tensor_factor_half: np.ndarray,
+    orb_sym: list,
     reordering_method: str,
+    driver: DMRGDriver,
+    n_sites,
+    n_elec,
+    spin,
+    ecore,
+    iprint=0,
+    bond_dim=50,
 ):
     """
     This function reorders the one-body and two-body tensors.
@@ -520,7 +542,112 @@ def reorder_integrals(
     if reordering_method == "none":
         one_body_tensor_reordered = one_body_tensor
         two_body_tensor_factor_half_reordered = two_body_tensor_factor_half
+        orb_sym_reordered = orb_sym
+        reordering_indices = np.array(list(range(np.array(one_body_tensor).shape[0])))
+
+    elif reordering_method == "gaopt, exchange matrix":
+        raise NotImplementedError(
+            "The 'gaopt, exchange matrix' reordering method is not implemented."
+        )
+        log.debug("Orbital Reordering Method: gaopt, exchange matrix")
+        idx = driver.orbital_reordering(
+            one_body_tensor, two_body_tensor_factor_half, method="gaopt"
+        )
+        h1e = one_body_tensor[idx][:, idx]
+        g2e = two_body_tensor_factor_half[idx][:, idx][:, :, idx][:, :, :, idx]
+        orb_sym_reordered = np.array(orb_sym)[idx]
+        one_body_tensor_reordered = h1e
+        two_body_tensor_factor_half_reordered = g2e
+        reordering_indices = idx
+
+    elif reordering_method == "gaopt, interaction matrix":
+        raise NotImplementedError(
+            "The 'gaopt, interaction matrix' reordering method is not implemented."
+        )
+        log.debug("Orbital Reordering Method: gaopt, interaction matrix")
+        # approx DMRG to get orbital_interaction_matrix
+        driver.initialize_system(
+            n_sites=n_sites, n_elec=n_elec, spin=spin, orb_sym=orb_sym
+        )
+        mpo = driver.get_qc_mpo(
+            h1e=one_body_tensor,
+            g2e=two_body_tensor_factor_half,
+            ecore=ecore,
+            iprint=iprint,
+        )
+        ket = driver.get_random_mps(tag="orbital_ordering", bond_dim=bond_dim, nroots=1)
+        energy = driver.dmrg(
+            mpo,
+            ket,
+            n_sweeps=10,
+            bond_dims=[bond_dim] * 9,
+            noises=[1e-4] * 4 + [1e-5] * 4 + [0],
+            thrds=[1e-10] * 9,
+            iprint=1,
+        )
+        log.debug("Approx Orbital Reordering DMRG energy = %20.15f" % energy)
+        minfo_orig = driver.get_orbital_interaction_matrix(ket)
+
+        idx = driver.orbital_reordering_interaction_matrix(minfo_orig, method="gaopt")
+        h1e = one_body_tensor[idx][:, idx]
+        g2e = two_body_tensor_factor_half[idx][:, idx][:, :, idx][:, :, :, idx]
+        orb_sym_reordered = np.array(orb_sym)[idx]
+        one_body_tensor_reordered = h1e
+        two_body_tensor_factor_half_reordered = g2e
+        reordering_indices = idx
+
+    elif reordering_method == "fiedler, exchange matrix":
+        log.debug("Orbital Reordering Method: fiedler, exchange matrix")
+        idx = driver.orbital_reordering(one_body_tensor, two_body_tensor_factor_half)
+        h1e = one_body_tensor[idx][:, idx]
+        g2e = two_body_tensor_factor_half[idx][:, idx][:, :, idx][:, :, :, idx]
+        orb_sym_reordered = np.array(orb_sym)[idx]
+        one_body_tensor_reordered = h1e
+        two_body_tensor_factor_half_reordered = g2e
+        reordering_indices = idx
+
+    elif reordering_method == "fiedler, interaction matrix":
+        raise NotImplementedError(
+            "The 'fiedler, interaction matrix' reordering method is not implemented."
+        )
+        log.debug("Orbital Reordering Method: fiedler, interaction matrix")
+        # approx DMRG to get orbital_interaction_matrix
+        driver.initialize_system(
+            n_sites=n_sites, n_elec=n_elec, spin=spin, orb_sym=orb_sym
+        )
+        mpo = driver.get_qc_mpo(
+            h1e=one_body_tensor,
+            g2e=two_body_tensor_factor_half,
+            ecore=ecore,
+            iprint=iprint,
+        )
+        ket = driver.get_random_mps(tag="orbital_ordering", bond_dim=bond_dim, nroots=1)
+        energy = driver.dmrg(
+            mpo,
+            ket,
+            n_sweeps=10,
+            bond_dims=[bond_dim] * 9,
+            noises=[1e-4] * 4 + [1e-5] * 4 + [0],
+            thrds=[1e-10] * 9,
+            iprint=1,
+        )
+        log.debug("Approx Orbital Reordering DMRG energy = %20.15f" % energy)
+        minfo_orig = driver.get_orbital_interaction_matrix(ket)
+
+        idx = driver.orbital_reordering_interaction_matrix(minfo_orig, method="fiedler")
+        h1e = one_body_tensor[idx][:, idx]
+        g2e = two_body_tensor_factor_half[idx][:, idx][:, :, idx][:, :, :, idx]
+        orb_sym_reordered = np.array(orb_sym)[idx]
+        one_body_tensor_reordered = h1e
+        two_body_tensor_factor_half_reordered = g2e
+        reordering_indices = idx
+
     else:
         raise ValueError(f"Invalid reordering method: {reordering_method}")
 
-    return one_body_tensor_reordered, two_body_tensor_factor_half_reordered
+    return (
+        one_body_tensor_reordered,
+        two_body_tensor_factor_half_reordered,
+        orb_sym_reordered,
+        reordering_indices,
+    )
