@@ -73,12 +73,15 @@ export LC_ALL=en_US.UTF-8
 # Below error handling from https://unix.stackexchange.com/a/462157
 set -eE -o functrace
 
-failure() {{
-  local lineno=$1
-  local msg=$2
-  echo "Failed at $lineno: $msg"
-}}
-trap 'failure ${{LINENO}} "$BASH_COMMAND"' ERR
+# failure() {{
+#   local lineno=$1
+#   local msg=$2
+#   echo "Failed at $lineno: $msg"
+# }}
+# trap 'failure ${{LINENO}} "$BASH_COMMAND"' ERR
+
+# call your_cleanup_function once we receive USR1 signal
+trap 'your_cleanup_function' USR1
 
 #Import Modules
 # module load CCEnv

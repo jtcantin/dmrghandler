@@ -204,3 +204,7 @@ examples/extract_process_9_10_11_12_new.ipynb
 run_command_schrock_reverse.txt
 examples/extrapolation_reverse_schedule.ipynb
 run_command_reorder.txt
+data_storage_paper_data.csv
+mem_collation.ipynb
+run_command_mo_n2_pincer_fiedler.txt
+

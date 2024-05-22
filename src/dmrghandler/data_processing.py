@@ -4,6 +4,7 @@ import h5py
 import numpy as np
 import openpyxl as px
 import openpyxl.chart as px_chart
+import pandas as pd
 
 
 def get_data_from_incomplete_processing(data_file):
@@ -13,6 +14,8 @@ def get_data_from_incomplete_processing(data_file):
     discarded_weights = []
     loop_cpu_times_s = []
     loop_wall_times_s = []
+    num_sweeps_list = []
+    final_sweep_delta_energies_list = []
     with h5py.File(data_file, "r") as file_obj:
         # Load for first preloop calculation
         preloop = file_obj["first_preloop_calc"]["dmrg_results"]
@@ -21,6 +24,11 @@ def get_data_from_incomplete_processing(data_file):
         discarded_weight = float(preloop["sweep_max_discarded_weight"][()][-1])
         loop_cpu_time_s = float(preloop["cpu_single_qchem_dmrg_calc_time_s"][()])
         loop_wall_time_s = float(preloop["wall_single_qchem_dmrg_calc_time_s"][()])
+        sweep_energies = preloop["sweep_energies"][()].ravel()
+        
+
+        num_sweeps_list.append(int(len(sweep_energies)))
+        final_sweep_delta_energies_list.append(sweep_energies[-1] - sweep_energies[-2])
         dmrg_energies.append(dmrg_energy)
         bond_dimensions.append(bond_dimension)
         discarded_weights.append(discarded_weight)
@@ -34,6 +42,10 @@ def get_data_from_incomplete_processing(data_file):
         discarded_weight = float(preloop["sweep_max_discarded_weight"][()][-1])
         loop_cpu_time_s = float(preloop["cpu_single_qchem_dmrg_calc_time_s"][()])
         loop_wall_time_s = float(preloop["wall_single_qchem_dmrg_calc_time_s"][()])
+        sweep_energies = preloop["sweep_energies"][()].ravel()
+
+        num_sweeps_list.append(int(len(sweep_energies)))
+        final_sweep_delta_energies_list.append(sweep_energies[-1] - sweep_energies[-2])
         dmrg_energies.append(dmrg_energy)
         bond_dimensions.append(bond_dimension)
         discarded_weights.append(discarded_weight)
@@ -54,6 +66,12 @@ def get_data_from_incomplete_processing(data_file):
             discarded_weight = float(loop["sweep_max_discarded_weight"][()][-1])
             loop_cpu_time_s = float(loop["cpu_single_qchem_dmrg_calc_time_s"][()])
             loop_wall_time_s = float(loop["wall_single_qchem_dmrg_calc_time_s"][()])
+            sweep_energies = loop["sweep_energies"][()].ravel()
+
+            num_sweeps_list.append(int(len(sweep_energies)))
+            final_sweep_delta_energies_list.append(
+                sweep_energies[-1] - sweep_energies[-2]
+            )
             dmrg_energies.append(dmrg_energy)
             bond_dimensions.append(bond_dimension)
             discarded_weights.append(discarded_weight)
@@ -84,6 +102,8 @@ def get_data_from_incomplete_processing(data_file):
         num_dmrg_calculations,
         loop_cpu_times_s,
         loop_wall_times_s,
+        num_sweeps_list,
+        final_sweep_delta_energies_list,
     )
 
 
@@ -162,6 +182,8 @@ def add_dmrg_processing_basic(
     discarded_weights,
     loop_cpu_times_s,
     loop_wall_times_s,
+    num_sweeps_list,
+    final_sweep_delta_energies_list,
     data_dict,
 ):
     # Get worksheet name from fcidump name
@@ -204,6 +226,8 @@ def add_dmrg_processing_basic(
         "W": "Wall Time (s)",
         "X": "CPU Time (processed)",
         "Y": "Wall Time (processed)",
+        "Z": "Num Sweeps",
+        "AA": "Final Sweep Delta Energy (Eh)",
     }
     ws.append(data_header_dict)
 
@@ -269,6 +293,15 @@ def add_dmrg_processing_basic(
     # Fill processed Wall Time column
     for i, wall_time in enumerate(loop_wall_times_s):
         ws[f"Y{7+i}"] = process_time(wall_time)
+
+    # Fill Num Sweeps column
+    for i, num_sweeps in enumerate(num_sweeps_list):
+        ws[f"Z{7+i}"] = num_sweeps
+
+    # Fill Final Sweep Delta Energy column
+    for i, final_sweep_delta_energy in enumerate(final_sweep_delta_energies_list):
+        ws[f"AA{7+i}"] = final_sweep_delta_energy
+        ws[f"AA{7+i}"].number_format = "0.00E+00"
 
     last_data_row = 7 + len(dmrg_energies) - 1
     # E_DMRG formula
@@ -450,7 +483,14 @@ def add_dmrg_processing_basic(
     )
 
 
-def setup_workbook(data_file_path, data_dict_list, workbook, csv_storage_path="./"):
+def setup_workbook(
+    data_file_path,
+    data_dict_list,
+    workbook,
+    csv_storage_path="./",
+    bd_extrapolation_dict=None,
+    memory_summary_csv_filename="./memory_summary.csv",
+):
     for data_dict in data_dict_list:
         data_file = (
             data_file_path / Path(data_dict["Calc UUID"]) / Path("dmrg_results.hdf5")
@@ -464,7 +504,22 @@ def setup_workbook(data_file_path, data_dict_list, workbook, csv_storage_path=".
             num_dmrg_calculations,
             loop_cpu_times_s,
             loop_wall_times_s,
+            num_sweeps_list,
+            final_sweep_delta_energies_list,
         ) = get_data_from_incomplete_processing(data_file)
+
+        # Min dmrg energy
+        data_dict["Min DMRG Energy"] = min(dmrg_energies)
+        # Max bond dimension, dmrg energy at max bond dimension, and computation time at max bond dimension
+        bd_max_arg = np.argmax(bond_dimensions)
+        data_dict["Max Bond Dimension"] = bond_dimensions[bd_max_arg]
+        data_dict["DMRG Energy at Max Bond Dimension"] = dmrg_energies[bd_max_arg]
+        data_dict["CPU Time at Max Bond Dimension (hr)"] = (
+            loop_cpu_times_s[bd_max_arg] / 3600
+        )
+        data_dict["Wall Time at Max Bond Dimension (hr)"] = (
+            loop_wall_times_s[bd_max_arg] / 3600
+        )
 
         if "Calc UUID Small BD" in data_dict:
             data_file_small_bd = (
@@ -480,6 +535,8 @@ def setup_workbook(data_file_path, data_dict_list, workbook, csv_storage_path=".
                 num_dmrg_calculations_small_bd,
                 loop_cpu_times_s_small_bd,
                 loop_wall_times_s_small_bd,
+                num_sweeps_list_small_bd,
+                final_sweep_delta_energies_list_small_bd,
             ) = get_data_from_incomplete_processing(data_file_small_bd)
             dmrg_energies = np.hstack((dmrg_energies_small_bd, dmrg_energies))
             bond_dimensions = np.hstack((bond_dimensions_small_bd, bond_dimensions))
@@ -494,6 +551,13 @@ def setup_workbook(data_file_path, data_dict_list, workbook, csv_storage_path=".
                 (loop_wall_times_s_small_bd, loop_wall_times_s)
             )
             loop_cpu_times_s = np.hstack((loop_cpu_times_s_small_bd, loop_cpu_times_s))
+            num_sweeps_list = np.hstack((num_sweeps_list_small_bd, num_sweeps_list))
+            final_sweep_delta_energies_list = np.hstack(
+                (
+                    final_sweep_delta_energies_list_small_bd,
+                    final_sweep_delta_energies_list,
+                )
+            )
 
         add_dmrg_processing_basic(
             workbook=workbook,
@@ -502,6 +566,8 @@ def setup_workbook(data_file_path, data_dict_list, workbook, csv_storage_path=".
             discarded_weights=discarded_weights,
             loop_cpu_times_s=loop_cpu_times_s,
             loop_wall_times_s=loop_wall_times_s,
+            num_sweeps_list=num_sweeps_list,
+            final_sweep_delta_energies_list=final_sweep_delta_energies_list,
             data_dict=data_dict,
         )
 
@@ -532,3 +598,43 @@ def setup_workbook(data_file_path, data_dict_list, workbook, csv_storage_path=".
             comments="# ",
             encoding=None,
         )
+    # Save memory summary to csv
+    if bd_extrapolation_dict is not None:
+        bd_extrap_series = pd.Series(bd_extrapolation_dict)
+        # Join the bd_extrap_series with the data_dict_list
+        data_dict_list_df = pd.DataFrame(data_dict_list)
+        data_dict_list_df = data_dict_list_df.set_index("fcidump")
+        bd_extrap_series = bd_extrap_series.to_frame()
+        bd_extrap_series.columns = ["BD Extrapolation"]
+        data_dict_list_df = data_dict_list_df.join(bd_extrap_series)
+        data_dict_list_df = data_dict_list_df.reset_index()
+        data_dict_list_df = data_dict_list_df.rename(columns={"index": "fcidump"})
+
+        # Use quadratic scaling for the RSS memory usage for extapolated BD, and for CPU and Wall time (cubic)
+        data_dict_list_df["RSS Memory Usage (GiB) Extrapolated"] = data_dict_list_df[
+            "RSS Memory Usage (GiB)"
+        ] * (
+            data_dict_list_df["BD Extrapolation"] ** 2
+            / data_dict_list_df["Max Bond Dimension"] ** 2
+        )
+        data_dict_list_df[
+            "CPU Time at Max Bond Dimension (hr) Extrapolated"
+        ] = data_dict_list_df["CPU Time at Max Bond Dimension (hr)"] * (
+            data_dict_list_df["BD Extrapolation"] ** 3
+            / data_dict_list_df["Max Bond Dimension"] ** 3
+        )
+        data_dict_list_df[
+            "Wall Time at Max Bond Dimension (hr) Extrapolated"
+        ] = data_dict_list_df["Wall Time at Max Bond Dimension (hr)"] * (
+            data_dict_list_df["BD Extrapolation"] ** 3
+            / data_dict_list_df["Max Bond Dimension"] ** 3
+        )
+        data_dict_list_df["RSS Memory Usage (GiB) Chem Accuracy"] = np.max(
+            [
+                data_dict_list_df["RSS Memory Usage (GiB)"],
+                data_dict_list_df["RSS Memory Usage (GiB) Extrapolated"],
+            ],
+            axis=0,
+        )
+
+        data_dict_list_df.to_csv(memory_summary_csv_filename, index=False)
