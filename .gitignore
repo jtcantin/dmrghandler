@@ -208,3 +208,9 @@ data_storage_paper_data.csv
 mem_collation.ipynb
 run_command_mo_n2_pincer_fiedler.txt
 
+examples/extrapolation_ferrocene.ipynb
+dmrg_results_9_test.hdf5
+run_command_ferrocene_new_active_space.txt
+run_command_nitrogen_fixation_fielder_fixed_memory.txt
+examples/extract_process_dmrg_results_app_paper_ferrocene.ipynb
+examples/extract_process_dmrg_results_app_paper_schrock_more_sweeps.ipynb
