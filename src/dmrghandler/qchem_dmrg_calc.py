@@ -186,6 +186,7 @@ def single_qchem_dmrg_calc(
         two_body_tensor_factor_half_reordered,
         orb_sym_reordered,
         reordering_indices,
+        reorder_output_dict,
     ) = reorder_integrals(
         one_body_tensor=one_body_tensor,
         two_body_tensor_factor_half=two_body_tensor_factor_half,
@@ -511,6 +512,9 @@ def single_qchem_dmrg_calc(
         "reordering_method_used": reordering_method,
     }
 
+    if reorder_output_dict is not None:
+        dmrg_results_dict.update(reorder_output_dict)
+
     return dmrg_results_dict
 
 
@@ -544,6 +548,7 @@ def reorder_integrals(
         two_body_tensor_factor_half_reordered = two_body_tensor_factor_half
         orb_sym_reordered = orb_sym
         reordering_indices = np.array(list(range(np.array(one_body_tensor).shape[0])))
+        reorder_output_dict = None
 
     elif reordering_method == "gaopt, exchange matrix":
         raise NotImplementedError(
@@ -559,6 +564,7 @@ def reorder_integrals(
         one_body_tensor_reordered = h1e
         two_body_tensor_factor_half_reordered = g2e
         reordering_indices = idx
+        reorder_output_dict = None
 
     elif reordering_method == "gaopt, interaction matrix":
         raise NotImplementedError(
@@ -595,6 +601,7 @@ def reorder_integrals(
         one_body_tensor_reordered = h1e
         two_body_tensor_factor_half_reordered = g2e
         reordering_indices = idx
+        reorder_output_dict = {"minfo_orig": minfo_orig}
 
     elif reordering_method == "fiedler, exchange matrix":
         log.debug("Orbital Reordering Method: fiedler, exchange matrix")
@@ -605,11 +612,12 @@ def reorder_integrals(
         one_body_tensor_reordered = h1e
         two_body_tensor_factor_half_reordered = g2e
         reordering_indices = idx
+        reorder_output_dict = None
 
     elif reordering_method == "fiedler, interaction matrix":
-        raise NotImplementedError(
-            "The 'fiedler, interaction matrix' reordering method is not implemented."
-        )
+        # raise NotImplementedError(
+        #     "The 'fiedler, interaction matrix' reordering method is not implemented."
+        # )
         log.debug("Orbital Reordering Method: fiedler, interaction matrix")
         # approx DMRG to get orbital_interaction_matrix
         driver.initialize_system(
@@ -625,7 +633,7 @@ def reorder_integrals(
         energy = driver.dmrg(
             mpo,
             ket,
-            n_sweeps=10,
+            n_sweeps=20,
             bond_dims=[bond_dim] * 9,
             noises=[1e-4] * 4 + [1e-5] * 4 + [0],
             thrds=[1e-10] * 9,
@@ -641,6 +649,7 @@ def reorder_integrals(
         one_body_tensor_reordered = h1e
         two_body_tensor_factor_half_reordered = g2e
         reordering_indices = idx
+        reorder_output_dict = {"minfo_orig": minfo_orig}
 
     else:
         raise ValueError(f"Invalid reordering method: {reordering_method}")
@@ -650,4 +659,5 @@ def reorder_integrals(
         two_body_tensor_factor_half_reordered,
         orb_sym_reordered,
         reordering_indices,
+        reorder_output_dict,
     )
