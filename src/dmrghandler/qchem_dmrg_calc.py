@@ -199,6 +199,7 @@ def single_qchem_dmrg_calc(
         ecore=core_energy,
         iprint=verbosity,
         bond_dim=min(50, max(sweep_schedule_bond_dims)),
+        dmrg_parameters=dmrg_parameters,
     )
     wall_reorder_integrals_end_time_ns = time.perf_counter_ns()
     cpu_reorder_integrals_end_time_ns = time.process_time_ns()
@@ -530,6 +531,7 @@ def reorder_integrals(
     ecore,
     iprint=0,
     bond_dim=50,
+    dmrg_parameters=None,
 ):
     """
     This function reorders the one-body and two-body tensors.
@@ -620,17 +622,31 @@ def reorder_integrals(
         # )
         log.debug("Orbital Reordering Method: fiedler, interaction matrix")
         # approx DMRG to get orbital_interaction_matrix
-        driver.initialize_system(
+        driver_local = DMRGDriver(
+            stack_mem=dmrg_parameters["stack_mem"],
+            scratch=dmrg_parameters["temp_dir"],
+            clean_scratch=True,  # Default value
+            restart_dir=dmrg_parameters["restart_dir"],
+            n_threads=dmrg_parameters["num_threads"],
+            # n_mkl_threads=n_mkl_threads,  # Default value is 1
+            symm_type=SymmetryTypes.SZ,
+            mpi=None,  # Default value
+            stack_mem_ratio=dmrg_parameters["stack_mem_ratio"],  # Default value 0.4
+            fp_codec_cutoff=1e-16,  # Default value 1e-16
+        )
+        driver_local.initialize_system(
             n_sites=n_sites, n_elec=n_elec, spin=spin, orb_sym=orb_sym
         )
-        mpo = driver.get_qc_mpo(
+        mpo = driver_local.get_qc_mpo(
             h1e=one_body_tensor,
             g2e=two_body_tensor_factor_half,
             ecore=ecore,
             iprint=iprint,
         )
-        ket = driver.get_random_mps(tag="orbital_ordering", bond_dim=bond_dim, nroots=1)
-        energy = driver.dmrg(
+        ket = driver_local.get_random_mps(
+            tag="orbital_ordering", bond_dim=bond_dim, nroots=1
+        )
+        energy = driver_local.dmrg(
             mpo,
             ket,
             n_sweeps=20,
@@ -640,16 +656,21 @@ def reorder_integrals(
             iprint=1,
         )
         log.debug("Approx Orbital Reordering DMRG energy = %20.15f" % energy)
-        minfo_orig = driver.get_orbital_interaction_matrix(ket)
+        minfo_orig = driver_local.get_orbital_interaction_matrix(ket)
 
-        idx = driver.orbital_reordering_interaction_matrix(minfo_orig, method="fiedler")
+        idx = driver_local.orbital_reordering_interaction_matrix(
+            minfo_orig, method="fiedler"
+        )
         h1e = one_body_tensor[idx][:, idx]
         g2e = two_body_tensor_factor_half[idx][:, idx][:, :, idx][:, :, :, idx]
         orb_sym_reordered = np.array(orb_sym)[idx]
         one_body_tensor_reordered = h1e
         two_body_tensor_factor_half_reordered = g2e
         reordering_indices = idx
-        reorder_output_dict = {"minfo_orig": minfo_orig}
+        reorder_output_dict = {
+            "minfo_orig": minfo_orig,
+            "reordering_bond_dim": bond_dim,
+        }
 
     else:
         raise ValueError(f"Invalid reordering method: {reordering_method}")

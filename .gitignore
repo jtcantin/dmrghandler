@@ -218,3 +218,5 @@ excited_state_dev.ipynb
 mutual_information_testing.ipynb
 svd_testing.ipynb
 examples/28_2_convergence.pdf
+block2_rc_install_notes.txt
+pyproject copy.toml

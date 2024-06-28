@@ -8,18 +8,23 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = ">=3.9"
-block2 = "==0.5.2"
-pyscf = "^2.5.0"
-matplotlib = "^3.8.3"
-pandas = "^2.2.1"
+block2 = "0.5.3rc13"
+pyscf = "^2.6.2"
+matplotlib = "^3.9.0"
+pandas = "^2.2.2"
 pyyaml = "^6.0.1"
 openfermion = "^1.6.1"
-notebook = "^7.1.2"
-openpyxl = "^3.1.2"
+notebook = "^7.2.1"
+openpyxl = "^3.1.5"
 memory-profiler = "^0.61.0"
 ipympl = "^0.9.4"
 
 [tool.poetry.dev-dependencies]
+
+[[tool.poetry.source]]
+name = "block2_rc"
+url = "https://block-hczhai.github.io/block2-preview/pypi/"
+priority = "supplemental"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
