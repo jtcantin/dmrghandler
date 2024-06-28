@@ -393,6 +393,31 @@ if __name__ == "__main__":
             overwrite=False,
         )
         sys.exit(0)
+    elif "num_states" in dmrg_parameters.keys() and dmrg_parameters["num_states"] > 1:
+        log.info("Multiple states requested. Skipping extrapolation.")
+
+        #Save timing data
+        timing_dict = {{
+            "wall_time_prepare_calc_s": wall_time_prepare_calc_ns/1e9,
+            "cpu_time_prepare_calc_s": cpu_time_prepare_calc_ns/1e9,
+            "wall_time_dmrg_loop_s": wall_time_dmrg_loop_ns/1e9,
+            "cpu_time_dmrg_loop_s": cpu_time_dmrg_loop_ns/1e9,
+            # "wall_time_extrapolation_s": wall_time_extrapolation_ns/1e9,
+            # "cpu_time_extrapolation_s": cpu_time_extrapolation_ns/1e9,
+            # "wall_time_plotting_s": wall_time_plotting_ns/1e9,
+            # "cpu_time_plotting_s": cpu_time_plotting_ns/1e9,
+            "wall_time_total_s": (time.perf_counter_ns() - wall_time_start_ns)/1e9,
+            "cpu_time_total_s": (time.process_time_ns() - cpu_time_start_ns)/1e9,
+        }}
+
+        hdf5_io.save_many_variables_to_hdf5(
+            hdf5_filepath=main_storage_file_path,
+            variables=timing_dict,
+            access_mode="a",
+            group="timing_data",
+            overwrite=False,
+        )
+        sys.exit(0)
 
     # Get final extrapolated energy
     wall_time_extrapolation_start_ns = time.perf_counter_ns()

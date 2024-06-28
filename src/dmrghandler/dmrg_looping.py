@@ -160,6 +160,17 @@ def dmrg_central_loop(
     cpu_dmrg_optimization_times_s = np.array(
         dmrg_results["cpu_dmrg_optimization_time_s"]
     )
+    if "num_states" in dmrg_results.keys() and dmrg_results["num_states"] > 1:
+        pad_arrays(dmrg_results)
+        state_energies_2d_array = np.array(dmrg_results["state_energies"])
+        state_sweep_bond_3d_array = dmrg_results["state_sweep_bond_dims"]
+        state_sweep_max_discarded_weight_3d_array = dmrg_results[
+            "state_sweep_max_discarded_weight"
+        ]
+        state_sweep_energies_3d_array = dmrg_results["state_sweep_energies"]
+
+        num_states_array = np.array(dmrg_results["num_states"])
+
     log.info(
         f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
     )
@@ -201,6 +212,14 @@ def dmrg_central_loop(
             "wall_dmrg_optimization_times_s": wall_dmrg_optimization_times_s,
             "cpu_dmrg_optimization_times_s": cpu_dmrg_optimization_times_s,
         }
+        if "num_states" in dmrg_results.keys() and dmrg_results["num_states"] > 1:
+            loop_results["state_sweep_energies"] = state_energies_2d_array
+            loop_results["state_sweep_bond_dims"] = state_sweep_bond_3d_array
+            loop_results["state_sweep_max_discarded_weight"] = (
+                state_sweep_max_discarded_weight_3d_array
+            )
+            loop_results["state_sweep_energies"] = state_sweep_energies_3d_array
+            loop_results["num_states"] = num_states_array
         hdf5_io.save_many_variables_to_hdf5(
             hdf5_filepath=main_storage_file_path,
             variables=loop_results,
@@ -302,6 +321,30 @@ def dmrg_central_loop(
     cpu_dmrg_optimization_times_s = np.hstack(
         [cpu_dmrg_optimization_times_s, dmrg_results["cpu_dmrg_optimization_time_s"]]
     )
+    if "num_states" in dmrg_results.keys() and dmrg_results["num_states"] > 1:
+        pad_arrays(dmrg_results)
+        state_energies_2d_array = np.dstack(
+            [state_energies_2d_array, dmrg_results["state_energies"]]
+        )
+        state_sweep_bond_3d_array = np.dstack(
+            [
+                state_sweep_bond_3d_array,
+                dmrg_results["state_sweep_bond_dims"],
+            ]
+        )
+        state_sweep_max_discarded_weight_3d_array = np.dstack(
+            [
+                state_sweep_max_discarded_weight_3d_array,
+                dmrg_results["state_sweep_max_discarded_weight"],
+            ]
+        )
+        state_sweep_energies_3d_array = np.dstack(
+            [
+                state_sweep_energies_3d_array,
+                dmrg_results["state_sweep_energies"],
+            ]
+        )
+        num_states_array = np.hstack([num_states_array, dmrg_results["num_states"]])
 
     save_dmrg_results(
         dmrg_results=dmrg_results,
@@ -395,6 +438,34 @@ def dmrg_central_loop(
                 dmrg_results["cpu_dmrg_optimization_time_s"],
             ]
         )
+        if "num_states" in dmrg_results.keys() and dmrg_results["num_states"] > 1:
+            pad_arrays(dmrg_results)
+            state_energies_2d_array = np.dstack(
+                [
+                    state_energies_2d_array,
+                    dmrg_results["state_energies"],
+                ]
+            )
+            state_sweep_bond_3d_array = np.dstack(
+                [
+                    state_sweep_bond_3d_array,
+                    dmrg_results["state_sweep_bond_dims"],
+                ]
+            )
+            state_sweep_max_discarded_weight_3d_array = np.dstack(
+                [
+                    state_sweep_max_discarded_weight_3d_array,
+                    dmrg_results["state_sweep_max_discarded_weight"],
+                ]
+            )
+            state_sweep_energies_3d_array = np.dstack(
+                [
+                    state_sweep_energies_3d_array,
+                    dmrg_results["state_sweep_energies"],
+                ]
+            )
+            num_states_array = np.hstack([num_states_array, dmrg_results["num_states"]])
+
         past_parameters = fit_parameters
         unmodified_fit_parameters_list.append(unmodified_fit_parameters)
         fit_parameters_list.append(fit_parameters)
@@ -435,6 +506,15 @@ def dmrg_central_loop(
         "wall_dmrg_optimization_times_s": wall_dmrg_optimization_times_s,
         "cpu_dmrg_optimization_times_s": cpu_dmrg_optimization_times_s,
     }
+    if "num_states" in dmrg_results.keys() and dmrg_results["num_states"] > 1:
+        loop_results["state_sweep_energies"] = state_energies_2d_array
+        loop_results["state_sweep_bond_dims"] = state_sweep_bond_3d_array
+        loop_results["state_sweep_max_discarded_weight"] = (
+            state_sweep_max_discarded_weight_3d_array
+        )
+        loop_results["state_sweep_energies"] = state_sweep_energies_3d_array
+        loop_results["num_states"] = num_states_array
+
     hdf5_io.save_many_variables_to_hdf5(
         hdf5_filepath=main_storage_file_path,
         variables=loop_results,
@@ -492,28 +572,39 @@ def dmrg_loop_function(
     discarded_weights = np.append(
         past_discarded_weights, dmrg_results["dmrg_discarded_weight"]
     )
-    wall_extrapolation_start_ns = time.perf_counter_ns()
-    cpu_extrapolation_start_ns = time.process_time_ns()
-    fit_result_obj, energy_estimated, fit_parameters, R_squared = (
-        energy_extrapolation.dmrg_energy_extrapolation(
-            energies_dmrg=energies_dmrg,
-            independent_vars=discarded_weights,
-            extrapolation_type="discarded_weight",
-            past_parameters=past_parameters,
-            verbosity=verbosity,
-        )
-    )
-    wall_extrapolation_ns = time.perf_counter_ns() - wall_extrapolation_start_ns
-    cpu_extrapolation_ns = time.process_time_ns() - cpu_extrapolation_start_ns
-    log.info(f"wall_extrapolation_s: {wall_extrapolation_ns/1e9}")
-    log.info(f"cpu_extrapolation_s: {cpu_extrapolation_ns/1e9}")
-    # If DMRG energy is below estimated energy, then use DMRG energy as DMRG is variational
-    fit_energy_replaced_by_dmrg = False
-    unmodified_fit_parameters = fit_parameters.copy()
-    if dmrg_results["dmrg_ground_state_energy"] < energy_estimated:
-        energy_estimated = dmrg_results["dmrg_ground_state_energy"]
-        fit_parameters[-1] = energy_estimated
+    if dmrg_parameters["num_states"] > 1:
+        energy_estimated = np.min(dmrg_results["dmrg_ground_state_energy"])
+        fit_parameters = [0, 0, 0]
+        unmodified_fit_parameters = [0, 0, 0]
+        R_squared = 0
         fit_energy_replaced_by_dmrg = True
+        wall_extrapolation_ns = 0
+        cpu_extrapolation_ns = 0
+        pad_arrays(dmrg_results)
+    else:
+        wall_extrapolation_start_ns = time.perf_counter_ns()
+        cpu_extrapolation_start_ns = time.process_time_ns()
+        fit_result_obj, energy_estimated, fit_parameters, R_squared = (
+            energy_extrapolation.dmrg_energy_extrapolation(
+                energies_dmrg=energies_dmrg,
+                independent_vars=discarded_weights,
+                extrapolation_type="discarded_weight",
+                past_parameters=past_parameters,
+                verbosity=verbosity,
+            )
+        )
+        wall_extrapolation_ns = time.perf_counter_ns() - wall_extrapolation_start_ns
+        cpu_extrapolation_ns = time.process_time_ns() - cpu_extrapolation_start_ns
+        log.info(f"wall_extrapolation_s: {wall_extrapolation_ns/1e9}")
+        log.info(f"cpu_extrapolation_s: {cpu_extrapolation_ns/1e9}")
+
+        # If DMRG energy is below estimated energy, then use DMRG energy as DMRG is variational
+        fit_energy_replaced_by_dmrg = False
+        unmodified_fit_parameters = fit_parameters.copy()
+        if dmrg_results["dmrg_ground_state_energy"] < energy_estimated:
+            energy_estimated = dmrg_results["dmrg_ground_state_energy"]
+            fit_parameters[-1] = energy_estimated
+            fit_energy_replaced_by_dmrg = True
 
     # Save data
     save_dmrg_results(
@@ -680,3 +771,52 @@ def save_dmrg_results(
     gc.collect()  # Collect garbage
 
     log.info(f"Saved dmrg_results to {main_storage_file_path}")
+
+
+def pad_arrays(dmrg_results):
+    # Find max length
+    max_length = max(
+        len(array_temp) for array_temp in dmrg_results["state_sweep_bond_dims"]
+    )
+    for i, array_temp in enumerate(dmrg_results["state_sweep_bond_dims"]):
+        if len(array_temp) < max_length:
+            dmrg_results["state_sweep_bond_dims"][i] = np.pad(
+                array_temp,
+                (0, max_length - len(array_temp)),
+                "constant",
+                constant_values=0,
+            )
+    for i, array_temp in enumerate(dmrg_results["state_sweep_max_discarded_weight"]):
+        if len(array_temp) < max_length:
+            dmrg_results["state_sweep_max_discarded_weight"][i] = np.pad(
+                array_temp,
+                (0, max_length - len(array_temp)),
+                "constant",
+                constant_values=0,
+            )
+    for i, array_temp in enumerate(dmrg_results["state_sweep_energies"]):
+        if len(array_temp.shape) == 2:
+            array_temp_2 = array_temp[:, 0]
+        else:
+            array_temp_2 = array_temp
+
+        if len(array_temp_2) < max_length:
+            dmrg_results["state_sweep_energies"][i] = np.pad(
+                array_temp_2,
+                (0, max_length - len(array_temp_2)),
+                "constant",
+                constant_values=0,
+            )
+        else:
+            dmrg_results["state_sweep_energies"][i] = array_temp_2
+
+    dmrg_results["state_sweep_bond_dims"] = np.vstack(
+        dmrg_results["state_sweep_bond_dims"]
+    )
+    dmrg_results["state_sweep_max_discarded_weight"] = np.vstack(
+        dmrg_results["state_sweep_max_discarded_weight"]
+    )
+    print(dmrg_results["state_sweep_energies"])
+    dmrg_results["state_sweep_energies"] = np.vstack(
+        dmrg_results["state_sweep_energies"]
+    )

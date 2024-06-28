@@ -176,6 +176,11 @@ def save_many_variables_to_hdf5(
                     output_object.create_dataset(variable_name, data=variable_value)
             except TypeError:
                 log.error(
+                    f"Error saving variables to HDF5 file. Couldn't save {variable_name} in group {group}. Type Error."
+                )
+                raise
+            except:
+                log.error(
                     f"Error saving variables to HDF5 file. Couldn't save {variable_name} in group {group}."
                 )
                 raise

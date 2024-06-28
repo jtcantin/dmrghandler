@@ -107,6 +107,12 @@ def single_qchem_dmrg_calc(
     stack_mem_ratio = dmrg_parameters[
         "stack_mem_ratio"
     ]  # Default value is 0.4, ratio of stack memory to total memory
+    if "num_states" in dmrg_parameters:
+        num_states = dmrg_parameters[
+            "num_states"
+        ]  # Default value is 1 (ground state only)
+    else:
+        num_states = 1
 
     print_system_info(
         f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
@@ -334,7 +340,7 @@ def single_qchem_dmrg_calc(
         center=0,  # Default value, canonical center of MPS
         dot=2,  # Default value, site type of MPS
         target=None,  # Default value, target quantum number
-        nroots=1,  # Default value, number of roots, use 1 for ground state
+        nroots=num_states,  # Default value, number of roots, use 1 for ground state
         occs=occupancy_hint,  # Hint of occupancy information, if None, uniform distribution is assumed
         full_fci=full_fci_space_bool,  # If True, the full FCI space is used, default is True
         left_vacuum=None,  # Default value, only has effects for SU(2) and SE MPS with non-single target
@@ -511,6 +517,36 @@ def single_qchem_dmrg_calc(
         "reordering_method_used": reordering_method,
     }
 
+    if num_states > 1:
+        (
+            state_energies,
+            state_sweep_bond_dims,
+            state_sweep_max_discarded_weight,
+            state_sweep_energies,
+        ) = multi_states_refinement(
+            ket=ket_optimized,
+            driver=driver,
+            mpo=qchem_hami_mpo,
+            max_num_sweeps=max_num_sweeps,
+            energy_convergence_threshold=energy_convergence_threshold,
+            sweep_schedule_bond_dims=sweep_schedule_bond_dims,
+            sweep_schedule_noise=sweep_schedule_noise,
+            sweep_schedule_davidson_threshold=sweep_schedule_davidson_threshold,
+            davidson_type=davidson_type,
+            eigenvalue_cutoff=eigenvalue_cutoff,
+            davidson_max_iterations=davidson_max_iterations,
+            dmrg_state_avgd_energies=dmrg_ground_state_energy,
+            verbosity=verbosity,
+        )
+        states_dmrg_results_dict = {
+            "num_states": num_states,
+            "state_energies": state_energies,
+            "state_sweep_bond_dims": state_sweep_bond_dims,
+            "state_sweep_max_discarded_weight": state_sweep_max_discarded_weight,
+            "state_sweep_energies": state_sweep_energies,
+        }
+        dmrg_results_dict.update(states_dmrg_results_dict)
+
     return dmrg_results_dict
 
 
@@ -650,4 +686,78 @@ def reorder_integrals(
         two_body_tensor_factor_half_reordered,
         orb_sym_reordered,
         reordering_indices,
+    )
+
+
+def multi_states_refinement(
+    ket,
+    driver,
+    mpo,
+    max_num_sweeps,
+    energy_convergence_threshold,
+    sweep_schedule_bond_dims,
+    sweep_schedule_noise,
+    sweep_schedule_davidson_threshold,
+    davidson_type,
+    eigenvalue_cutoff,
+    davidson_max_iterations,
+    dmrg_state_avgd_energies,
+    verbosity=0,
+):
+    # Based on https://block2.readthedocs.io/en/latest/tutorial/qc-hamiltonians.html#Excited-States
+
+    kets = [driver.split_mps(ket, ir, tag="KET-%d" % ir) for ir in range(ket.nroots)]
+
+    state_energies = []
+    state_sweep_bond_dims = []
+    state_sweep_max_discarded_weight = []
+    state_sweep_energies = []
+    # refined_kets = []
+
+    for ir in range(ket.nroots):
+        proj_mpss = kets[:ir]
+        proj_weights = []
+        for iter in range(ir):
+            energy_gap = dmrg_state_avgd_energies[ir] - dmrg_state_avgd_energies[iter]
+            proj_weights.append(
+                1.5 * energy_gap
+            )  # Want to ensure that the weighting factor
+            # is larger than the energy gap, but not too large
+
+        dmrg_ground_state_energy = driver.dmrg(
+            mpo=mpo,
+            ket=kets[ir],
+            n_sweeps=max_num_sweeps,
+            tol=energy_convergence_threshold,
+            bond_dims=sweep_schedule_bond_dims,
+            noises=sweep_schedule_noise,
+            thrds=sweep_schedule_davidson_threshold,
+            iprint=verbosity,
+            dav_type=davidson_type,
+            cutoff=eigenvalue_cutoff,
+            twosite_to_onesite=None,  # Don't switch the site type
+            dav_max_iter=davidson_max_iterations,
+            # dav_def_max_size=davidson_max_krylov_subspace_size,
+            proj_mpss=proj_mpss,  # For excited states, default is None
+            proj_weights=proj_weights,  # For excited states, default is None
+            store_wfn_spectra=True,  # Store MPS singular value spectra in self._sweep_wfn_spectra
+            spectra_with_multiplicity=False,  # Don't multiply singular values with spin multiplicity (for SU2)
+            # lowmem_noise=lowmem_noise_bool,  # Whether to use a lower memory version of the noise
+            # sweep_start=sweep_start,
+            # forward=initial_sweep_direction,
+        )
+        state_energies.append(dmrg_ground_state_energy)
+
+        sweep_bond_dims, sweep_max_discarded_weight, sweep_energies = (
+            driver.get_dmrg_results()
+        )
+        state_sweep_bond_dims.append(sweep_bond_dims)
+        state_sweep_max_discarded_weight.append(sweep_max_discarded_weight)
+        state_sweep_energies.append(sweep_energies)
+
+    return (
+        state_energies,
+        state_sweep_bond_dims,
+        state_sweep_max_discarded_weight,
+        state_sweep_energies,
     )

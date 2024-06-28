@@ -214,3 +214,7 @@ run_command_ferrocene_new_active_space.txt
 run_command_nitrogen_fixation_fielder_fixed_memory.txt
 examples/extract_process_dmrg_results_app_paper_ferrocene.ipynb
 examples/extract_process_dmrg_results_app_paper_schrock_more_sweeps.ipynb
+examples/28_2_convergence.pdf
+svd_testing.ipynb
+mutual_information_testing.ipynb
+excited_state_dev.ipynb
