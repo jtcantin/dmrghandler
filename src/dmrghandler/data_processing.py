@@ -5,6 +5,7 @@ import numpy as np
 import openpyxl as px
 import openpyxl.chart as px_chart
 import pandas as pd
+from openpyxl.chart.layout import Layout, ManualLayout
 
 
 def get_data_from_incomplete_processing(data_file):
@@ -16,6 +17,7 @@ def get_data_from_incomplete_processing(data_file):
     loop_wall_times_s = []
     num_sweeps_list = []
     final_sweep_delta_energies_list = []
+    reordering_method_list = []
     with h5py.File(data_file, "r") as file_obj:
         # Load for first preloop calculation
         preloop = file_obj["first_preloop_calc"]["dmrg_results"]
@@ -25,7 +27,11 @@ def get_data_from_incomplete_processing(data_file):
         loop_cpu_time_s = float(preloop["cpu_single_qchem_dmrg_calc_time_s"][()])
         loop_wall_time_s = float(preloop["wall_single_qchem_dmrg_calc_time_s"][()])
         sweep_energies = preloop["sweep_energies"][()].ravel()
-        
+        if "reordering_method_used" in preloop:
+            reordering_method = preloop["reordering_method_used"][()]
+            reordering_method_list.append(reordering_method)
+        else:
+            reordering_method_list.append("none (key not found)")
 
         num_sweeps_list.append(int(len(sweep_energies)))
         final_sweep_delta_energies_list.append(sweep_energies[-1] - sweep_energies[-2])
@@ -43,6 +49,11 @@ def get_data_from_incomplete_processing(data_file):
         loop_cpu_time_s = float(preloop["cpu_single_qchem_dmrg_calc_time_s"][()])
         loop_wall_time_s = float(preloop["wall_single_qchem_dmrg_calc_time_s"][()])
         sweep_energies = preloop["sweep_energies"][()].ravel()
+        if "reordering_method_used" in preloop:
+            reordering_method = preloop["reordering_method_used"][()]
+            reordering_method_list.append(reordering_method)
+        else:
+            reordering_method_list.append("none (key not found)")
 
         num_sweeps_list.append(int(len(sweep_energies)))
         final_sweep_delta_energies_list.append(sweep_energies[-1] - sweep_energies[-2])
@@ -67,6 +78,11 @@ def get_data_from_incomplete_processing(data_file):
             loop_cpu_time_s = float(loop["cpu_single_qchem_dmrg_calc_time_s"][()])
             loop_wall_time_s = float(loop["wall_single_qchem_dmrg_calc_time_s"][()])
             sweep_energies = loop["sweep_energies"][()].ravel()
+            if "reordering_method_used" in loop:
+                reordering_method = loop["reordering_method_used"][()]
+                reordering_method_list.append(reordering_method)
+            else:
+                reordering_method_list.append("none (key not found)")
 
             num_sweeps_list.append(int(len(sweep_energies)))
             final_sweep_delta_energies_list.append(
@@ -104,6 +120,7 @@ def get_data_from_incomplete_processing(data_file):
         loop_wall_times_s,
         num_sweeps_list,
         final_sweep_delta_energies_list,
+        reordering_method_list,
     )
 
 
@@ -140,6 +157,8 @@ def add_dmrg_data_chart(
         chart = px_chart.ScatterChart()
         new_chart = True
     chart.style = None
+    chart.x_axis.delete = False
+    chart.y_axis.delete = False
     chart.x_axis.title = x_title
     chart.y_axis.title = y_title
 
@@ -166,6 +185,15 @@ def add_dmrg_data_chart(
     chart.x_axis.crosses = "min"
     chart.y_axis.crosses = "min"
 
+    chart.layout = Layout(
+        manualLayout=ManualLayout(
+            x=0.25,
+            y=0.01,
+            h=0.9,
+            w=0.9,
+        )
+    )
+
     if series_name is None:
         chart.legend = None
 
@@ -184,6 +212,7 @@ def add_dmrg_processing_basic(
     loop_wall_times_s,
     num_sweeps_list,
     final_sweep_delta_energies_list,
+    reordering_method_list,
     data_dict,
 ):
     # Get worksheet name from fcidump name
@@ -228,6 +257,7 @@ def add_dmrg_processing_basic(
         "Y": "Wall Time (processed)",
         "Z": "Num Sweeps",
         "AA": "Final Sweep Delta Energy (Eh)",
+        "AB": "Reordering Method",
     }
     ws.append(data_header_dict)
 
@@ -302,6 +332,10 @@ def add_dmrg_processing_basic(
     for i, final_sweep_delta_energy in enumerate(final_sweep_delta_energies_list):
         ws[f"AA{7+i}"] = final_sweep_delta_energy
         ws[f"AA{7+i}"].number_format = "0.00E+00"
+
+    # Fill Reordering Method column
+    for i, reordering_method in enumerate(reordering_method_list):
+        ws[f"AB{7+i}"] = reordering_method
 
     last_data_row = 7 + len(dmrg_energies) - 1
     # E_DMRG formula
@@ -490,11 +524,22 @@ def setup_workbook(
     csv_storage_path="./",
     bd_extrapolation_dict=None,
     memory_summary_csv_filename="./memory_summary.csv",
+    csv_uuid=False,
 ):
     for data_dict in data_dict_list:
-        data_file = (
-            data_file_path / Path(data_dict["Calc UUID"]) / Path("dmrg_results.hdf5")
-        )
+        # If data_file_path is a list of paths, try each path until one is found where the file exists
+        if isinstance(data_file_path, list):
+            for path in data_file_path:
+                data_file = (
+                    Path(path)
+                    / Path(data_dict["Calc UUID"])
+                    / Path("dmrg_results.hdf5")
+                )
+                if data_file.exists():
+                    break
+        # data_file = (
+        #     data_file_path / Path(data_dict["Calc UUID"]) / Path("dmrg_results.hdf5")
+        # )
         # Get DMRG energy, bond dimensions, and truncation error for each loop
         (
             dmrg_energies,
@@ -506,6 +551,7 @@ def setup_workbook(
             loop_wall_times_s,
             num_sweeps_list,
             final_sweep_delta_energies_list,
+            reordering_method_list,
         ) = get_data_from_incomplete_processing(data_file)
 
         # Min dmrg energy
@@ -537,6 +583,7 @@ def setup_workbook(
                 loop_wall_times_s_small_bd,
                 num_sweeps_list_small_bd,
                 final_sweep_delta_energies_list_small_bd,
+                reordering_method_list_small_bd,
             ) = get_data_from_incomplete_processing(data_file_small_bd)
             dmrg_energies = np.hstack((dmrg_energies_small_bd, dmrg_energies))
             bond_dimensions = np.hstack((bond_dimensions_small_bd, bond_dimensions))
@@ -558,6 +605,9 @@ def setup_workbook(
                     final_sweep_delta_energies_list,
                 )
             )
+            reordering_method_list = np.hstack(
+                (reordering_method_list_small_bd, reordering_method_list)
+            )
 
         add_dmrg_processing_basic(
             workbook=workbook,
@@ -568,6 +618,7 @@ def setup_workbook(
             loop_wall_times_s=loop_wall_times_s,
             num_sweeps_list=num_sweeps_list,
             final_sweep_delta_energies_list=final_sweep_delta_energies_list,
+            reordering_method_list=reordering_method_list,
             data_dict=data_dict,
         )
 
@@ -575,7 +626,11 @@ def setup_workbook(
         csv_storage_path = Path(csv_storage_path)
         csv_storage_path.mkdir(parents=True, exist_ok=True)
         fcidump_name = data_dict["fcidump"]
-        csv_filename = Path(fcidump_name + ".csv")
+        if csv_uuid:
+            csv_filename = Path(fcidump_name + "_" + data_dict["Calc UUID"] + ".csv")
+        else:
+            csv_filename = Path(fcidump_name + ".csv")
+
         csv_data_array = np.vstack(
             [
                 dmrg_energies,

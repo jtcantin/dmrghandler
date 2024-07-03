@@ -220,3 +220,6 @@ svd_testing.ipynb
 examples/28_2_convergence.pdf
 block2_rc_install_notes.txt
 pyproject copy.toml
+examples/extrapolation_new_fcidumps.ipynb
+examples/extract_process_dmrg_results_new_fcidump_pincer.ipynb
+run_command_new_fcidumps.txt
