@@ -545,6 +545,7 @@ def reorder_integrals(
         np.ndarray: The reordered one-body tensor.
         np.ndarray: The reordered two-body tensor.
     """
+    log.debug(f"Reordering method: {reordering_method}")
     if reordering_method == "none":
         one_body_tensor_reordered = one_body_tensor
         two_body_tensor_factor_half_reordered = two_body_tensor_factor_half
@@ -553,9 +554,6 @@ def reorder_integrals(
         reorder_output_dict = None
 
     elif reordering_method == "gaopt, exchange matrix":
-        raise NotImplementedError(
-            "The 'gaopt, exchange matrix' reordering method is not implemented."
-        )
         log.debug("Orbital Reordering Method: gaopt, exchange matrix")
         idx = driver.orbital_reordering(
             one_body_tensor, two_body_tensor_factor_half, method="gaopt"
@@ -568,42 +566,206 @@ def reorder_integrals(
         reordering_indices = idx
         reorder_output_dict = None
 
+        # raise NotImplementedError(
+        #     "The 'gaopt, exchange matrix' reordering method is not implemented."
+        # )
+        # log.debug("Orbital Reordering Method: gaopt, exchange matrix")
+        # idx = driver.orbital_reordering(
+        #     one_body_tensor, two_body_tensor_factor_half, method="gaopt"
+        # )
+        # h1e = one_body_tensor[idx][:, idx]
+        # g2e = two_body_tensor_factor_half[idx][:, idx][:, :, idx][:, :, :, idx]
+        # orb_sym_reordered = np.array(orb_sym)[idx]
+        # one_body_tensor_reordered = h1e
+        # two_body_tensor_factor_half_reordered = g2e
+        # reordering_indices = idx
+        # reorder_output_dict = None
+
     elif reordering_method == "gaopt, interaction matrix":
-        raise NotImplementedError(
-            "The 'gaopt, interaction matrix' reordering method is not implemented."
-        )
+        # raise NotImplementedError(
+        #     "The 'gaopt, interaction matrix' reordering method is not implemented."
+        # )
         log.debug("Orbital Reordering Method: gaopt, interaction matrix")
         # approx DMRG to get orbital_interaction_matrix
-        driver.initialize_system(
+        driver_local = DMRGDriver(
+            stack_mem=dmrg_parameters["stack_mem"],
+            scratch=dmrg_parameters["temp_dir"],
+            clean_scratch=True,  # Default value
+            restart_dir=dmrg_parameters["restart_dir"],
+            n_threads=dmrg_parameters["num_threads"],
+            # n_mkl_threads=n_mkl_threads,  # Default value is 1
+            symm_type=SymmetryTypes.SZ,
+            mpi=None,  # Default value
+            stack_mem_ratio=dmrg_parameters["stack_mem_ratio"],  # Default value 0.4
+            fp_codec_cutoff=1e-16,  # Default value 1e-16
+        )
+        driver_local.initialize_system(
             n_sites=n_sites, n_elec=n_elec, spin=spin, orb_sym=orb_sym
         )
-        mpo = driver.get_qc_mpo(
+        mpo = driver_local.get_qc_mpo(
             h1e=one_body_tensor,
             g2e=two_body_tensor_factor_half,
             ecore=ecore,
             iprint=iprint,
         )
-        ket = driver.get_random_mps(tag="orbital_ordering", bond_dim=bond_dim, nroots=1)
-        energy = driver.dmrg(
+        ket = driver_local.get_random_mps(
+            tag="orbital_ordering", bond_dim=bond_dim, nroots=1
+        )
+        energy = driver_local.dmrg(
             mpo,
             ket,
-            n_sweeps=10,
+            n_sweeps=20,
             bond_dims=[bond_dim] * 9,
             noises=[1e-4] * 4 + [1e-5] * 4 + [0],
             thrds=[1e-10] * 9,
             iprint=1,
         )
         log.debug("Approx Orbital Reordering DMRG energy = %20.15f" % energy)
-        minfo_orig = driver.get_orbital_interaction_matrix(ket)
+        minfo_orig = driver_local.get_orbital_interaction_matrix(ket)
 
-        idx = driver.orbital_reordering_interaction_matrix(minfo_orig, method="gaopt")
+        idx = driver_local.orbital_reordering_interaction_matrix(
+            minfo_orig, method="gaopt"
+        )
         h1e = one_body_tensor[idx][:, idx]
         g2e = two_body_tensor_factor_half[idx][:, idx][:, :, idx][:, :, :, idx]
         orb_sym_reordered = np.array(orb_sym)[idx]
         one_body_tensor_reordered = h1e
         two_body_tensor_factor_half_reordered = g2e
         reordering_indices = idx
-        reorder_output_dict = {"minfo_orig": minfo_orig}
+        reorder_output_dict = {
+            "minfo_orig": minfo_orig,
+            "reordering_bond_dim": bond_dim,
+        }
+
+    elif reordering_method == "gaopt, interaction matrix, SU(2) calc":
+        # raise NotImplementedError(
+        #     "The 'gaopt, interaction matrix' reordering method is not implemented."
+        # )
+        log.debug("Orbital Reordering Method: gaopt, interaction matrix, SU(2) calc")
+        # approx DMRG to get orbital_interaction_matrix
+        driver_local = DMRGDriver(
+            stack_mem=dmrg_parameters["stack_mem"],
+            scratch=dmrg_parameters["temp_dir"],
+            clean_scratch=True,  # Default value
+            restart_dir=dmrg_parameters["restart_dir"],
+            n_threads=dmrg_parameters["num_threads"],
+            # n_mkl_threads=n_mkl_threads,  # Default value is 1
+            symm_type=SymmetryTypes.SU2,
+            mpi=None,  # Default value
+            stack_mem_ratio=dmrg_parameters["stack_mem_ratio"],  # Default value 0.4
+            fp_codec_cutoff=1e-16,  # Default value 1e-16
+        )
+        driver_local.initialize_system(
+            n_sites=n_sites, n_elec=n_elec, spin=spin, orb_sym=orb_sym
+        )
+        mpo = driver_local.get_qc_mpo(
+            h1e=one_body_tensor,
+            g2e=two_body_tensor_factor_half,
+            ecore=ecore,
+            iprint=iprint,
+        )
+        ket = driver_local.get_random_mps(
+            tag="orbital_ordering", bond_dim=bond_dim, nroots=1
+        )
+        energy = driver_local.dmrg(
+            mpo,
+            ket,
+            n_sweeps=20,
+            bond_dims=[bond_dim] * 9,
+            noises=[1e-4] * 4 + [1e-5] * 4 + [0],
+            thrds=[1e-10] * 9,
+            iprint=1,
+        )
+        log.debug("Approx Orbital Reordering DMRG energy = %20.15f" % energy)
+
+        # Convert to Sz symmetry
+        zket = driver_local.mps_change_to_sz(ket, "ZKET")
+
+        driver_local.symm_type = SymmetryTypes.SZ
+        driver_local.initialize_system(
+            n_sites=n_sites, n_elec=n_elec, spin=spin, orb_sym=orb_sym
+        )
+
+        minfo_orig = driver_local.get_orbital_interaction_matrix(zket)
+
+        idx = driver_local.orbital_reordering_interaction_matrix(
+            minfo_orig, method="gaopt"
+        )
+        h1e = one_body_tensor[idx][:, idx]
+        g2e = two_body_tensor_factor_half[idx][:, idx][:, :, idx][:, :, :, idx]
+        orb_sym_reordered = np.array(orb_sym)[idx]
+        one_body_tensor_reordered = h1e
+        two_body_tensor_factor_half_reordered = g2e
+        reordering_indices = idx
+        reorder_output_dict = {
+            "minfo_orig": minfo_orig,
+            "reordering_bond_dim": bond_dim,
+        }
+
+    elif reordering_method == "fiedler, interaction matrix, SU(2) calc":
+        # raise NotImplementedError(
+        #     "The 'gaopt, interaction matrix' reordering method is not implemented."
+        # )
+        log.debug("Orbital Reordering Method: fiedler, interaction matrix, SU(2) calc")
+        # approx DMRG to get orbital_interaction_matrix
+        driver_local = DMRGDriver(
+            stack_mem=dmrg_parameters["stack_mem"],
+            scratch=dmrg_parameters["temp_dir"],
+            clean_scratch=True,  # Default value
+            restart_dir=dmrg_parameters["restart_dir"],
+            n_threads=dmrg_parameters["num_threads"],
+            # n_mkl_threads=n_mkl_threads,  # Default value is 1
+            symm_type=SymmetryTypes.SU2,
+            mpi=None,  # Default value
+            stack_mem_ratio=dmrg_parameters["stack_mem_ratio"],  # Default value 0.4
+            fp_codec_cutoff=1e-16,  # Default value 1e-16
+        )
+        driver_local.initialize_system(
+            n_sites=n_sites, n_elec=n_elec, spin=spin, orb_sym=orb_sym
+        )
+        mpo = driver_local.get_qc_mpo(
+            h1e=one_body_tensor,
+            g2e=two_body_tensor_factor_half,
+            ecore=ecore,
+            iprint=iprint,
+        )
+        ket = driver_local.get_random_mps(
+            tag="orbital_ordering", bond_dim=bond_dim, nroots=1
+        )
+        energy = driver_local.dmrg(
+            mpo,
+            ket,
+            n_sweeps=20,
+            bond_dims=[bond_dim] * 9,
+            noises=[1e-4] * 4 + [1e-5] * 4 + [0],
+            thrds=[1e-10] * 9,
+            iprint=1,
+        )
+        log.debug("Approx Orbital Reordering DMRG energy = %20.15f" % energy)
+
+        # Convert to Sz symmetry
+        zket = driver_local.mps_change_to_sz(ket, "ZKET")
+
+        driver_local.symm_type = SymmetryTypes.SZ
+        driver_local.initialize_system(
+            n_sites=n_sites, n_elec=n_elec, spin=spin, orb_sym=orb_sym
+        )
+
+        minfo_orig = driver_local.get_orbital_interaction_matrix(zket)
+
+        idx = driver_local.orbital_reordering_interaction_matrix(
+            minfo_orig, method="fiedler"
+        )
+        h1e = one_body_tensor[idx][:, idx]
+        g2e = two_body_tensor_factor_half[idx][:, idx][:, :, idx][:, :, :, idx]
+        orb_sym_reordered = np.array(orb_sym)[idx]
+        one_body_tensor_reordered = h1e
+        two_body_tensor_factor_half_reordered = g2e
+        reordering_indices = idx
+        reorder_output_dict = {
+            "minfo_orig": minfo_orig,
+            "reordering_bond_dim": bond_dim,
+        }
 
     elif reordering_method == "fiedler, exchange matrix":
         log.debug("Orbital Reordering Method: fiedler, exchange matrix")
