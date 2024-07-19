@@ -18,6 +18,8 @@ def get_data_from_incomplete_processing(data_file):
     num_sweeps_list = []
     final_sweep_delta_energies_list = []
     reordering_method_list = []
+    reordering_method_cpu_times_s = []
+    reordering_method_wall_times_s = []
     with h5py.File(data_file, "r") as file_obj:
         # Load for first preloop calculation
         preloop = file_obj["first_preloop_calc"]["dmrg_results"]
@@ -29,6 +31,12 @@ def get_data_from_incomplete_processing(data_file):
         sweep_energies = preloop["sweep_energies"][()].ravel()
         if "reordering_method_used" in preloop:
             reordering_method = preloop["reordering_method_used"][()]
+            reordering_method_cpu_times_s.append(
+                float(preloop["cpu_reorder_integrals_time_s"][()])
+            )
+            reordering_method_wall_times_s.append(
+                float(preloop["wall_reorder_integrals_time_s"][()])
+            )
             reordering_method_list.append(reordering_method)
         else:
             reordering_method_list.append("none (key not found)")
@@ -51,6 +59,12 @@ def get_data_from_incomplete_processing(data_file):
         sweep_energies = preloop["sweep_energies"][()].ravel()
         if "reordering_method_used" in preloop:
             reordering_method = preloop["reordering_method_used"][()]
+            reordering_method_cpu_times_s.append(
+                float(preloop["cpu_reorder_integrals_time_s"][()])
+            )
+            reordering_method_wall_times_s.append(
+                float(preloop["wall_reorder_integrals_time_s"][()])
+            )
             reordering_method_list.append(reordering_method)
         else:
             reordering_method_list.append("none (key not found)")
@@ -80,6 +94,12 @@ def get_data_from_incomplete_processing(data_file):
             sweep_energies = loop["sweep_energies"][()].ravel()
             if "reordering_method_used" in loop:
                 reordering_method = loop["reordering_method_used"][()]
+                reordering_method_cpu_times_s.append(
+                    float(loop["cpu_reorder_integrals_time_s"][()])
+                )
+                reordering_method_wall_times_s.append(
+                    float(loop["wall_reorder_integrals_time_s"][()])
+                )
                 reordering_method_list.append(reordering_method)
             else:
                 reordering_method_list.append("none (key not found)")
@@ -121,6 +141,8 @@ def get_data_from_incomplete_processing(data_file):
         num_sweeps_list,
         final_sweep_delta_energies_list,
         reordering_method_list,
+        reordering_method_cpu_times_s,
+        reordering_method_wall_times_s,
     )
 
 
@@ -213,6 +235,8 @@ def add_dmrg_processing_basic(
     num_sweeps_list,
     final_sweep_delta_energies_list,
     reordering_method_list,
+    reordering_method_cpu_times_s,
+    reordering_method_wall_times_s,
     data_dict,
 ):
     # Get worksheet name from fcidump name
@@ -258,6 +282,8 @@ def add_dmrg_processing_basic(
         "Z": "Num Sweeps",
         "AA": "Final Sweep Delta Energy (Eh)",
         "AB": "Reordering Method",
+        "AC": "CPU Time Reordering Method (s)",
+        "AD": "Wall Time Reordering Method (s)",
     }
     ws.append(data_header_dict)
 
@@ -336,6 +362,16 @@ def add_dmrg_processing_basic(
     # Fill Reordering Method column
     for i, reordering_method in enumerate(reordering_method_list):
         ws[f"AB{7+i}"] = reordering_method
+
+    # Fill CPU Time column for reordering method
+    for i, cpu_time in enumerate(reordering_method_cpu_times_s):
+        ws[f"AC{7+i}"] = cpu_time
+        ws[f"AC{7+i}"].number_format = "0.00"
+
+    # Fill Wall Time column for reordering method
+    for i, wall_time in enumerate(reordering_method_wall_times_s):
+        ws[f"AD{7+i}"] = wall_time
+        ws[f"AD{7+i}"].number_format = "0.00"
 
     last_data_row = 7 + len(dmrg_energies) - 1
     # E_DMRG formula
@@ -552,6 +588,8 @@ def setup_workbook(
             num_sweeps_list,
             final_sweep_delta_energies_list,
             reordering_method_list,
+            reordering_method_cpu_times_s,
+            reordering_method_wall_times_s,
         ) = get_data_from_incomplete_processing(data_file)
 
         # Min dmrg energy
@@ -584,6 +622,8 @@ def setup_workbook(
                 num_sweeps_list_small_bd,
                 final_sweep_delta_energies_list_small_bd,
                 reordering_method_list_small_bd,
+                reordering_method_cpu_times_s_small_bd,
+                reordering_method_wall_times_s_small_bd,
             ) = get_data_from_incomplete_processing(data_file_small_bd)
             dmrg_energies = np.hstack((dmrg_energies_small_bd, dmrg_energies))
             bond_dimensions = np.hstack((bond_dimensions_small_bd, bond_dimensions))
@@ -608,6 +648,15 @@ def setup_workbook(
             reordering_method_list = np.hstack(
                 (reordering_method_list_small_bd, reordering_method_list)
             )
+            reordering_method_cpu_times_s = np.hstack(
+                (reordering_method_cpu_times_s_small_bd, reordering_method_cpu_times_s)
+            )
+            reordering_method_wall_times_s = np.hstack(
+                (
+                    reordering_method_wall_times_s_small_bd,
+                    reordering_method_wall_times_s,
+                )
+            )
 
         add_dmrg_processing_basic(
             workbook=workbook,
@@ -619,6 +668,8 @@ def setup_workbook(
             num_sweeps_list=num_sweeps_list,
             final_sweep_delta_energies_list=final_sweep_delta_energies_list,
             reordering_method_list=reordering_method_list,
+            reordering_method_cpu_times_s=reordering_method_cpu_times_s,
+            reordering_method_wall_times_s=reordering_method_wall_times_s,
             data_dict=data_dict,
         )
 
