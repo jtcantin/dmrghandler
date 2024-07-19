@@ -8,7 +8,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = ">=3.9"
-block2 = "0.5.3rc13"
+block2 = "0.5.3rc16"
 pyscf = "^2.6.2"
 matplotlib = "^3.9.0"
 pandas = "^2.2.2"
