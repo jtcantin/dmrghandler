@@ -1,3 +1,5 @@
+import datetime
+import json
 from pathlib import Path
 
 import h5py
@@ -744,3 +746,101 @@ def setup_workbook(
         )
 
         data_dict_list_df.to_csv(memory_summary_csv_filename, index=False)
+
+
+def produce_set_of_solution_json_filesdef(
+    data_file_path,
+    data_dict_list,
+    csv_storage_path="./",
+    bd_extrapolation_dict=None,
+    memory_summary_csv_filename="./memory_summary.csv",
+    csv_uuid=False,
+):
+    for data_dict in data_dict_list:
+        # If data_file_path is a list of paths, try each path until one is found where the file exists
+        if isinstance(data_file_path, list):
+            for path in data_file_path:
+                data_file = (
+                    Path(path)
+                    / Path(data_dict["Calc UUID"])
+                    / Path("dmrg_results.hdf5")
+                )
+                if data_file.exists():
+                    break
+        (
+            dmrg_energies,
+            bond_dimensions,
+            discarded_weights,
+            num_loops,
+            num_dmrg_calculations,
+            loop_cpu_times_s,
+            loop_wall_times_s,
+            num_sweeps_list,
+            final_sweep_delta_energies_list,
+            reordering_method_list,
+            reordering_method_cpu_times_s,
+            reordering_method_wall_times_s,
+        ) = get_data_from_incomplete_processing(data_file)
+
+        produce_solution_json(
+            data_dict,
+            energy=np.min(dmrg_energies),
+            contact_info="temp",
+            compute_hardware_type="classical_computer",
+            compute_details="none",
+            digital_signature="none",
+        )
+
+
+def produce_solution_json(
+    data_dict,
+    energy,
+    contact_info="temp",
+    compute_hardware_type="classical_computer",
+    compute_details="none",
+    digital_signature="none",
+):
+    problem_instance_uuid = data_dict["instance ID"]
+    solution_uuid = data_dict["Calc UUID"]
+    short_name = data_dict["fcidump"]
+    overall_time = {
+        "wall_clock_start_time": "temp",
+        "wall_clock_stop_time": "temp",
+        "seconds": data_dict["CC Wall Time"],
+    }
+    run_time = {
+        "overall_time": overall_time,
+        "preprocessing_time": "temp",
+        "algorithm_run_time": "temp",
+        "postprocessing_time": "temp",
+    }
+
+    solution_data = {
+        "instance_data_object_uuid": problem_instance_uuid,
+        "run_time": run_time,
+        "energy": energy,
+        "energy_units": "Hartree",
+    }
+
+    # Timestamp in ISO 8601 format in UTC (note the `Z`)
+    creation_timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+    sol_dict = {
+        "solution_uuid": solution_uuid,
+        "problem_instance_uuid": problem_instance_uuid,
+        "short_name": short_name,
+        "creation_timestamp": creation_timestamp,
+        "contact_info": contact_info,
+        "solution_data": solution_data,
+        "compute_hardware_type": compute_hardware_type,
+        "compute_details": compute_details,
+        "digital_signature": digital_signature,
+        "$schema": "https://github.com/jp7745/qb-file-schemas/blob/main/schemas/solution.schema.0.0.1.json",
+    }
+
+    # Save solution to json
+    json_filename = Path(short_name + "_" + solution_uuid + ".json")
+    with open(json_filename, "w") as json_file:
+        json.dump(sol_dict, json_file, indent=4)
+
+    return json_filename

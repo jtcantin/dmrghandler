@@ -2,6 +2,7 @@ import gc
 import inspect
 import logging
 import os
+import shutil
 
 # import shutil
 import time
@@ -656,6 +657,14 @@ def save_dmrg_results(
         group=f"{calc_id_str}/dmrg_results",
         overwrite=False,
     )
+
+    # Copy hdf5 file to mps_final_storage_path
+    hdf5_backup_location = Path(mps_final_storage_path) / Path(
+        main_storage_file_path.parent / Path("hdf5_backup")
+    )
+    hdf5_backup_location.mkdir(parents=True, exist_ok=True)
+    shutil.copy(main_storage_file_path, hdf5_backup_location)
+
     driver = dmrg_results["dmrg_driver"]
     # Release the memory
     log.info(f"Releasing the memory from driver")

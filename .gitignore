@@ -223,3 +223,10 @@ pyproject copy.toml
 examples/extrapolation_new_fcidumps.ipynb
 examples/extract_process_dmrg_results_new_fcidump_pincer.ipynb
 run_command_new_fcidumps.txt
+run_command_new_fcidumps_gaopt_exchange.txt
+examples/extract_process_dmrg_results_new_fcidumps_nitrogen_fixation.ipynb
+examples/extrapolation_new_fcidumps_nitrogen_fixation.ipynb
+examples/extrapolation_reverse_schedule_new_fcidumps.ipynb
+examples/fcidump.*
+examples/solution_file_generation.ipynb
+examples/solution.schema.0.0.1.json
