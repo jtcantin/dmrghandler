@@ -5,17 +5,17 @@ Handle DMRG calculations. The running code and submit script generation code is 
 ## Installation
 
 ```bash
-$ pip install --extra-index-url=https://block-hczhai.github.io/block2-preview/pypi/ git+https://github.com/jtcantin/dmrghandler
+pip install --extra-index-url=https://block-hczhai.github.io/block2-preview/pypi/ git+https://github.com/jtcantin/dmrghandler
 ```
 
 Update with reinstallation of dependencies (recommended whenever `pyproject.toml` has changed):
 ```bash
-$ python -m pip install --extra-index-url=https://block-hczhai.github.io/block2-preview/pypi/ --force-reinstall git+https://github.com/jtcantin/dmrghandler
+python -m pip install --extra-index-url=https://block-hczhai.github.io/block2-preview/pypi/ --force-reinstall git+https://github.com/jtcantin/dmrghandler
 ```
 
 Update without reinstallation of dependencies:
 ```bash
-$ python -m pip install --extra-index-url=https://block-hczhai.github.io/block2-preview/pypi/ --force-reinstall --no-deps git+https://github.com/jtcantin/dmrghandler
+python -m pip install --extra-index-url=https://block-hczhai.github.io/block2-preview/pypi/ --force-reinstall --no-deps git+https://github.com/jtcantin/dmrghandler
 ```
 
 `--extra-index-url=https://block-hczhai.github.io/block2-preview/pypi/` is included so that a release candidate version of Block2 can be used.
