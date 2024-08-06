@@ -347,22 +347,47 @@ def generate_sweep_schedule(factor_count_tuples, starting_bond_dimension):
     return sweep_schedule_bond_dims
 
 
-def fwd_reverse_schedule(start_bd, num_points):
-    schedule = [start_bd // 2] * 4 + [start_bd] * 5
+def fwd_reverse_schedule(
+    start_bd,
+    num_points,
+    sweeps_per_point=8,
+    fwd_half_bd_num_sweeps=4,
+    fwd_full_bd_num_sweeps=5,
+):
+    schedule = [start_bd // 2] * fwd_half_bd_num_sweeps + [
+        start_bd
+    ] * fwd_full_bd_num_sweeps
     for i in range(num_points):
-        schedule += [int((0.9091 ** (i + 1)) * start_bd)] * 8
+        schedule += [int((0.9091 ** (i + 1)) * start_bd)] * sweeps_per_point
     return schedule
 
 
-def fwd_reverse_schedule_noise(noise_1, noise_2, num_points):
-    schedule = [noise_1] * 4 + [noise_2] * 4 + [0]
+def fwd_reverse_schedule_noise(
+    noise_1,
+    noise_2,
+    num_points,
+    sweeps_per_point=8,
+    fwd_half_bd_num_sweeps=4,
+    fwd_full_bd_num_sweeps=5,
+):
+    schedule = (
+        [noise_1] * fwd_half_bd_num_sweeps
+        + [noise_2] * (fwd_full_bd_num_sweeps - 1)
+        + [0]
+    )
     for i in range(num_points):
-        schedule += [0] * 8
+        schedule += [0] * sweeps_per_point
     return schedule
 
 
-def fwd_reverse_schedule_threshold(thresh, num_points):
-    schedule = [thresh] * 9
+def fwd_reverse_schedule_threshold(
+    thresh,
+    num_points,
+    sweeps_per_point=8,
+    fwd_half_bd_num_sweeps=4,
+    fwd_full_bd_num_sweeps=5,
+):
+    schedule = [thresh] * (fwd_half_bd_num_sweeps + fwd_full_bd_num_sweeps)
     for i in range(num_points):
-        schedule += [thresh] * 8
+        schedule += [thresh] * sweeps_per_point
     return schedule
