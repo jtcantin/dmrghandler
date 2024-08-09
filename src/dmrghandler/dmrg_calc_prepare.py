@@ -142,7 +142,11 @@ def load_tensors(data_file_path):
             extra_attributes,
             spin_symm_broken,
         ) = load_tensors_from_hdf5(data_file_path)
-    elif (Path(data_file_path).name).startswith("fcidump."):
+    elif (
+        (Path(data_file_path).name).startswith("fcidump.")
+        or (Path(data_file_path).name).startswith("fcidump")
+        or (Path(data_file_path).name).startswith("FCIDUMP")
+    ):
         (
             one_body_tensor,
             two_body_tensor,
@@ -554,7 +558,7 @@ def check_spin_symmetry(one_body_tensor, two_body_tensor):
             for riter in range(num_orbitals):
                 for siter in range(num_orbitals):
 
-                    if  (
+                    if (
                         not np.allclose(
                             two_body_tensor[2 * piter, 2 * qiter, 2 * riter, 2 * siter],
                             two_body_tensor[
