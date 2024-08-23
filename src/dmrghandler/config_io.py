@@ -248,7 +248,7 @@ def gen_config_files(
             "do_single_calc" in dmrg_advanced_config
             and dmrg_advanced_config["do_single_calc"]
             and not isinstance(
-                config_dict.get("sweep_schedule_bond_dims_parameters")[0], list
+                config_dict.get("sweep_schedule_bond_dims_parameters")[0][0], tuple
             )
         ):
             sweep_schedule_bond_dims = common_or_list(
