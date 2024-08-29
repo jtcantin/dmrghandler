@@ -1,6 +1,8 @@
 # dmrghandler
 
-Handle DMRG calculations. The running code and submit script generation code is currently here. An example of how to use this package is still forthcoming.
+Handle DMRG calculations. The running code and submit script generation code is currently here. 
+
+A usuage example for the Niagara cluster is `examples/example_niagara_prepare_calcs_gsee_benchmark_coarse_set.py`. After this is run, configuration files and submit commands are generated. 
 
 ## Installation
 
