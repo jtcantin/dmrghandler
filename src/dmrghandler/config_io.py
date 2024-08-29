@@ -291,6 +291,11 @@ def gen_config_files(
         else:
             reordering_method = "none"
 
+        if "restart_dir_list" in config_dict:
+            restart_dir = common_or_list(config_dict["restart_dir_list"], data_iter)
+        else:
+            restart_dir = None
+
         dmrg_basic_config = {
             "max_num_sweeps": max_num_sweeps,
             "energy_convergence_threshold": energy_convergence_threshold,
@@ -298,7 +303,7 @@ def gen_config_files(
             "sweep_schedule_noise": str(sweep_schedule_noise),
             "sweep_schedule_davidson_threshold": str(sweep_schedule_davidson_threshold),
             "temp_dir": temp_dir,
-            "restart_dir": None,
+            "restart_dir": restart_dir,
             # "mps_storage_folder",
             "reordering_method": reordering_method,
             "init_state_bond_dimension": init_state_bond_dimension,

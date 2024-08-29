@@ -6,6 +6,7 @@ import inspect
 import logging
 import os
 import time
+import shutil
 
 log = logging.getLogger(__name__)
 import numpy as np
@@ -147,6 +148,18 @@ def single_qchem_dmrg_calc(
         f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
     )
     log.debug(f"DMRG parameters right before driver initialization: {dmrg_parameters}")
+    # If start sweep not zero, then the initial MPS is loaded from the restart directory
+
+    if sweep_start != 0:
+        # If it already exists, clean out the scratch directory
+        if os.path.exists(temp_dir):
+            shutil.rmtree(temp_dir)
+        
+
+        # Copy the MPS from the restart directory to the scratch directory
+        shutil.copytree(restart_dir, temp_dir)
+        
+
     wall_make_driver_start_time_ns = time.perf_counter_ns()
     cpu_make_driver_start_time_ns = time.process_time_ns()
     driver = DMRGDriver(
@@ -323,6 +336,26 @@ def single_qchem_dmrg_calc(
     cpu_generate_initial_mps_start_time_ns = time.process_time_ns()
     if initial_mps_method == "random":
         driver.bw.b.Random.rand_seed(init_state_seed)
+        initial_ket = driver.get_random_mps(
+            tag="init_ket",
+            bond_dim=init_state_bond_dimension,
+            center=0,  # Default value, canonical center of MPS
+            dot=2,  # Default value, site type of MPS
+            target=None,  # Default value, target quantum number
+            nroots=1,  # Default value, number of roots, use 1 for ground state
+            occs=occupancy_hint,  # Hint of occupancy information, if None, uniform distribution is assumed
+            full_fci=full_fci_space_bool,  # If True, the full FCI space is used, default is True
+            left_vacuum=None,  # Default value, only has effects for SU(2) and SE MPS with non-single target
+            casci_ncore=0,  # For CASCI MPS, default is 0
+            casci_nvirt=0,  # For CASCI MPS, default is 0
+            mrci_order=0,  # For CASCI MPS, default is 0
+            orig_dot=init_state_direct_two_site_construction_bool,  # Default is False; if False, create MPS as one-site, then convert to two-site
+            # If True, create MPS as two-site or one-site directly
+        )
+
+    elif initial_mps_method == "restart":
+        initial_ket = driver.load_mps(tag="ket_optimized", nroots=1)
+
     else:
         raise NotImplementedError(
             f"Not implemented initial MPS method: {initial_mps_method}"
@@ -330,22 +363,7 @@ def single_qchem_dmrg_calc(
     print_system_info(
         f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
     )
-    initial_ket = driver.get_random_mps(
-        tag="init_ket",
-        bond_dim=init_state_bond_dimension,
-        center=0,  # Default value, canonical center of MPS
-        dot=2,  # Default value, site type of MPS
-        target=None,  # Default value, target quantum number
-        nroots=1,  # Default value, number of roots, use 1 for ground state
-        occs=occupancy_hint,  # Hint of occupancy information, if None, uniform distribution is assumed
-        full_fci=full_fci_space_bool,  # If True, the full FCI space is used, default is True
-        left_vacuum=None,  # Default value, only has effects for SU(2) and SE MPS with non-single target
-        casci_ncore=0,  # For CASCI MPS, default is 0
-        casci_nvirt=0,  # For CASCI MPS, default is 0
-        mrci_order=0,  # For CASCI MPS, default is 0
-        orig_dot=init_state_direct_two_site_construction_bool,  # Default is False; if False, create MPS as one-site, then convert to two-site
-        # If True, create MPS as two-site or one-site directly
-    )
+
     # log.debug(f"LINE {inspect.getframeinfo(inspect.currentframe()).lineno}")
     # b = driver.expr_builder()
     # b.add_term("(C+D)0", [0, 0], np.sqrt(2))
@@ -443,8 +461,8 @@ def single_qchem_dmrg_calc(
         store_wfn_spectra=True,  # Store MPS singular value spectra in self._sweep_wfn_spectra
         spectra_with_multiplicity=False,  # Don't multiply singular values with spin multiplicity (for SU2)
         # lowmem_noise=lowmem_noise_bool,  # Whether to use a lower memory version of the noise
-        # sweep_start=sweep_start,
-        # forward=initial_sweep_direction,
+        sweep_start=sweep_start,
+        forward=initial_sweep_direction,
     )
     wall_dmrg_optimization_end_time_ns = time.perf_counter_ns()
     cpu_dmrg_optimization_end_time_ns = time.process_time_ns()
@@ -784,6 +802,9 @@ def reorder_integrals(
         # )
         log.debug("Orbital Reordering Method: fiedler, interaction matrix")
         # approx DMRG to get orbital_interaction_matrix
+
+        # print(dmrg_parameters["restart_dir"])
+        # input()
         driver_local = DMRGDriver(
             stack_mem=dmrg_parameters["stack_mem"],
             scratch=dmrg_parameters["temp_dir"],

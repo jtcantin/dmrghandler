@@ -113,11 +113,11 @@ def dmrg_central_loop(
             f"symmetry_type {dmrg_parameters['symmetry_type']} not recognized"
         )
 
-    if "restart_dir" in dmrg_parameters and dmrg_parameters["restart_dir"] is not None:
-        log.warning(
-            f"restart_dir is ignored in dmrg_central_loop, MPSs will be saved in { main_storage_folder_path / 'mps_storage'}"
-        )
-        dmrg_parameters["restart_dir"] = None
+    # if "restart_dir" in dmrg_parameters and dmrg_parameters["restart_dir"] is not None:
+    #     log.warning(
+    #         f"restart_dir is ignored in dmrg_central_loop, MPSs will be saved in { main_storage_folder_path / 'mps_storage'}"
+    #     )
+    #     dmrg_parameters["restart_dir"] = None
 
     # Initial two calculations
     # Run DMRG

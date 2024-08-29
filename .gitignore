@@ -230,3 +230,4 @@ examples/extrapolation_reverse_schedule_new_fcidumps.ipynb
 examples/fcidump.*
 examples/solution_file_generation.ipynb
 examples/solution.schema.0.0.1.json
+tests/restart_temp_*/*
