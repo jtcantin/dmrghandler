@@ -8,6 +8,7 @@ import openpyxl as px
 import openpyxl.chart as px_chart
 import pandas as pd
 from openpyxl.chart.layout import Layout, ManualLayout
+import uuid
 
 
 def get_data_from_incomplete_processing(data_file):
@@ -22,14 +23,94 @@ def get_data_from_incomplete_processing(data_file):
     reordering_method_list = []
     reordering_method_cpu_times_s = []
     reordering_method_wall_times_s = []
+    extra_dict = {
+        "loop_copy_mps_cpu_time_s_list": [],
+        "loop_dmrg_optimization_cpu_time_s_list": [],
+        "loop_driver_initialize_system_cpu_time_s_list": [],
+        "loop_generate_initial_mps_cpu_time_s_list": [],
+        "loop_get_qchem_hami_mpo_cpu_time_s_list": [],
+        "loop_make_driver_cpu_time_s_list": [],
+        "loop_reorder_integrals_cpu_time_s_list": [],
+        "loop_copy_mps_wall_time_s_list": [],
+        "loop_dmrg_optimization_wall_time_s_list": [],
+        "loop_driver_initialize_system_wall_time_s_list": [],
+        "loop_generate_initial_mps_wall_time_s_list": [],
+        "loop_get_qchem_hami_mpo_wall_time_s_list": [],
+        "loop_make_driver_wall_time_s_list": [],
+        "loop_reorder_integrals_wall_time_s_list": [],
+    }
     with h5py.File(data_file, "r") as file_obj:
         # Load for first preloop calculation
+        subtract_count = 1
         preloop = file_obj["first_preloop_calc"]["dmrg_results"]
         dmrg_energy = float(preloop["dmrg_ground_state_energy"][()])
         bond_dimension = int(preloop["sweep_bond_dims"][()][-1])
         discarded_weight = float(preloop["sweep_max_discarded_weight"][()][-1])
         loop_cpu_time_s = float(preloop["cpu_single_qchem_dmrg_calc_time_s"][()])
         loop_wall_time_s = float(preloop["wall_single_qchem_dmrg_calc_time_s"][()])
+
+        loop_copy_mps_cpu_time_s = float(
+            preloop["/first_preloop_calc/dmrg_results/cpu_copy_mps_time_s"][()]
+        )
+        loop_dmrg_optimization_cpu_time_s = float(
+            preloop["/first_preloop_calc/dmrg_results/cpu_dmrg_optimization_time_s"][()]
+        )
+        loop_driver_initialize_system_cpu_time_s = float(
+            preloop[
+                "/first_preloop_calc/dmrg_results/cpu_driver_initialize_system_time_s"
+            ][()]
+        )
+        loop_generate_initial_mps_cpu_time_s = float(
+            preloop["/first_preloop_calc/dmrg_results/cpu_generate_initial_mps_time_s"][
+                ()
+            ]
+        )
+        loop_get_qchem_hami_mpo_cpu_time_s = float(
+            preloop["/first_preloop_calc/dmrg_results/cpu_get_qchem_hami_mpo_time_s"][
+                ()
+            ]
+        )
+        loop_make_driver_cpu_time_s = float(
+            preloop["/first_preloop_calc/dmrg_results/cpu_make_driver_time_s"][()]
+        )
+        loop_reorder_integrals_cpu_time_s = float(
+            preloop["/first_preloop_calc/dmrg_results/cpu_reorder_integrals_time_s"][()]
+        )
+        # loop__cpu_time_s = float(preloop["/first_preloop_calc/dmrg_results/cpu_single_qchem_dmrg_calc_time_s"][()])
+
+        loop_copy_mps_wall_time_s = float(
+            preloop["/first_preloop_calc/dmrg_results/wall_copy_mps_time_s"][()]
+        )
+        loop_dmrg_optimization_wall_time_s = float(
+            preloop["/first_preloop_calc/dmrg_results/wall_dmrg_optimization_time_s"][
+                ()
+            ]
+        )
+        loop_driver_initialize_system_wall_time_s = float(
+            preloop[
+                "/first_preloop_calc/dmrg_results/wall_driver_initialize_system_time_s"
+            ][()]
+        )
+        loop_generate_initial_mps_wall_time_s = float(
+            preloop[
+                "/first_preloop_calc/dmrg_results/wall_generate_initial_mps_time_s"
+            ][()]
+        )
+        loop_get_qchem_hami_mpo_wall_time_s = float(
+            preloop["/first_preloop_calc/dmrg_results/wall_get_qchem_hami_mpo_time_s"][
+                ()
+            ]
+        )
+        loop_make_driver_wall_time_s = float(
+            preloop["/first_preloop_calc/dmrg_results/wall_make_driver_time_s"][()]
+        )
+        loop_reorder_integrals_wall_time_s = float(
+            preloop["/first_preloop_calc/dmrg_results/wall_reorder_integrals_time_s"][
+                ()
+            ]
+        )
+        # loop_single_qchem_dmrg_calc_wall_time_s = float(preloop["/first_preloop_calc/dmrg_results/wall_single_qchem_dmrg_calc_time_s"][()])
+
         sweep_energies = preloop["sweep_energies"][()].ravel()
         if "reordering_method_used" in preloop:
             reordering_method = preloop["reordering_method_used"][()]
@@ -50,34 +131,186 @@ def get_data_from_incomplete_processing(data_file):
         discarded_weights.append(discarded_weight)
         loop_cpu_times_s.append(loop_cpu_time_s)
         loop_wall_times_s.append(loop_wall_time_s)
+        extra_dict["loop_copy_mps_cpu_time_s_list"].append(loop_copy_mps_cpu_time_s)
+        extra_dict["loop_dmrg_optimization_cpu_time_s_list"].append(
+            loop_dmrg_optimization_cpu_time_s
+        )
+        extra_dict["loop_driver_initialize_system_cpu_time_s_list"].append(
+            loop_driver_initialize_system_cpu_time_s
+        )
+        extra_dict["loop_generate_initial_mps_cpu_time_s_list"].append(
+            loop_generate_initial_mps_cpu_time_s
+        )
+        extra_dict["loop_get_qchem_hami_mpo_cpu_time_s_list"].append(
+            loop_get_qchem_hami_mpo_cpu_time_s
+        )
+        extra_dict["loop_make_driver_cpu_time_s_list"].append(
+            loop_make_driver_cpu_time_s
+        )
+        extra_dict["loop_reorder_integrals_cpu_time_s_list"].append(
+            loop_reorder_integrals_cpu_time_s
+        )
+
+        extra_dict["loop_copy_mps_wall_time_s_list"].append(loop_copy_mps_wall_time_s)
+        extra_dict["loop_dmrg_optimization_wall_time_s_list"].append(
+            loop_dmrg_optimization_wall_time_s
+        )
+        extra_dict["loop_driver_initialize_system_wall_time_s_list"].append(
+            loop_driver_initialize_system_wall_time_s
+        )
+        extra_dict["loop_generate_initial_mps_wall_time_s_list"].append(
+            loop_generate_initial_mps_wall_time_s
+        )
+        extra_dict["loop_get_qchem_hami_mpo_wall_time_s_list"].append(
+            loop_get_qchem_hami_mpo_wall_time_s
+        )
+        extra_dict["loop_make_driver_wall_time_s_list"].append(
+            loop_make_driver_wall_time_s
+        )
+        extra_dict["loop_reorder_integrals_wall_time_s_list"].append(
+            loop_reorder_integrals_wall_time_s
+        )
 
         # Load for second preloop calculation
-        preloop = file_obj["second_preloop_calc"]["dmrg_results"]
-        dmrg_energy = float(preloop["dmrg_ground_state_energy"][()])
-        bond_dimension = int(preloop["sweep_bond_dims"][()][-1])
-        discarded_weight = float(preloop["sweep_max_discarded_weight"][()][-1])
-        loop_cpu_time_s = float(preloop["cpu_single_qchem_dmrg_calc_time_s"][()])
-        loop_wall_time_s = float(preloop["wall_single_qchem_dmrg_calc_time_s"][()])
-        sweep_energies = preloop["sweep_energies"][()].ravel()
-        if "reordering_method_used" in preloop:
-            reordering_method = preloop["reordering_method_used"][()]
-            reordering_method_cpu_times_s.append(
-                float(preloop["cpu_reorder_integrals_time_s"][()])
-            )
-            reordering_method_wall_times_s.append(
-                float(preloop["wall_reorder_integrals_time_s"][()])
-            )
-            reordering_method_list.append(reordering_method)
-        else:
-            reordering_method_list.append("none (key not found)")
+        if "second_preloop_calc" in file_obj:
+            subtract_count += 1
+            preloop = file_obj["second_preloop_calc"]["dmrg_results"]
+            dmrg_energy = float(preloop["dmrg_ground_state_energy"][()])
+            bond_dimension = int(preloop["sweep_bond_dims"][()][-1])
+            discarded_weight = float(preloop["sweep_max_discarded_weight"][()][-1])
+            loop_cpu_time_s = float(preloop["cpu_single_qchem_dmrg_calc_time_s"][()])
+            loop_wall_time_s = float(preloop["wall_single_qchem_dmrg_calc_time_s"][()])
 
-        num_sweeps_list.append(int(len(sweep_energies)))
-        final_sweep_delta_energies_list.append(sweep_energies[-1] - sweep_energies[-2])
-        dmrg_energies.append(dmrg_energy)
-        bond_dimensions.append(bond_dimension)
-        discarded_weights.append(discarded_weight)
-        loop_cpu_times_s.append(loop_cpu_time_s)
-        loop_wall_times_s.append(loop_wall_time_s)
+            loop_copy_mps_cpu_time_s = float(
+                preloop["/first_preloop_calc/dmrg_results/cpu_copy_mps_time_s"][()]
+            )
+            loop_dmrg_optimization_cpu_time_s = float(
+                preloop[
+                    "/first_preloop_calc/dmrg_results/cpu_dmrg_optimization_time_s"
+                ][()]
+            )
+            loop_driver_initialize_system_cpu_time_s = float(
+                preloop[
+                    "/first_preloop_calc/dmrg_results/cpu_driver_initialize_system_time_s"
+                ][()]
+            )
+            loop_generate_initial_mps_cpu_time_s = float(
+                preloop[
+                    "/first_preloop_calc/dmrg_results/cpu_generate_initial_mps_time_s"
+                ][()]
+            )
+            loop_get_qchem_hami_mpo_cpu_time_s = float(
+                preloop[
+                    "/first_preloop_calc/dmrg_results/cpu_get_qchem_hami_mpo_time_s"
+                ][()]
+            )
+            loop_make_driver_cpu_time_s = float(
+                preloop["/first_preloop_calc/dmrg_results/cpu_make_driver_time_s"][()]
+            )
+            loop_reorder_integrals_cpu_time_s = float(
+                preloop[
+                    "/first_preloop_calc/dmrg_results/cpu_reorder_integrals_time_s"
+                ][()]
+            )
+            # loop__cpu_time_s = float(preloop["/first_preloop_calc/dmrg_results/cpu_single_qchem_dmrg_calc_time_s"][()])
+
+            loop_copy_mps_wall_time_s = float(
+                preloop["/first_preloop_calc/dmrg_results/wall_copy_mps_time_s"][()]
+            )
+            loop_dmrg_optimization_wall_time_s = float(
+                preloop[
+                    "/first_preloop_calc/dmrg_results/wall_dmrg_optimization_time_s"
+                ][()]
+            )
+            loop_driver_initialize_system_wall_time_s = float(
+                preloop[
+                    "/first_preloop_calc/dmrg_results/wall_driver_initialize_system_time_s"
+                ][()]
+            )
+            loop_generate_initial_mps_wall_time_s = float(
+                preloop[
+                    "/first_preloop_calc/dmrg_results/wall_generate_initial_mps_time_s"
+                ][()]
+            )
+            loop_get_qchem_hami_mpo_wall_time_s = float(
+                preloop[
+                    "/first_preloop_calc/dmrg_results/wall_get_qchem_hami_mpo_time_s"
+                ][()]
+            )
+            loop_make_driver_wall_time_s = float(
+                preloop["/first_preloop_calc/dmrg_results/wall_make_driver_time_s"][()]
+            )
+            loop_reorder_integrals_wall_time_s = float(
+                preloop[
+                    "/first_preloop_calc/dmrg_results/wall_reorder_integrals_time_s"
+                ][()]
+            )
+            # loop_single_qchem_dmrg_calc_wall_time_s = float(preloop["/first_preloop_calc/dmrg_results/wall_single_qchem_dmrg_calc_time_s"][()])
+
+            sweep_energies = preloop["sweep_energies"][()].ravel()
+            if "reordering_method_used" in preloop:
+                reordering_method = preloop["reordering_method_used"][()]
+                reordering_method_cpu_times_s.append(
+                    float(preloop["cpu_reorder_integrals_time_s"][()])
+                )
+                reordering_method_wall_times_s.append(
+                    float(preloop["wall_reorder_integrals_time_s"][()])
+                )
+                reordering_method_list.append(reordering_method)
+            else:
+                reordering_method_list.append("none (key not found)")
+
+            num_sweeps_list.append(int(len(sweep_energies)))
+            final_sweep_delta_energies_list.append(
+                sweep_energies[-1] - sweep_energies[-2]
+            )
+            dmrg_energies.append(dmrg_energy)
+            bond_dimensions.append(bond_dimension)
+            discarded_weights.append(discarded_weight)
+            loop_cpu_times_s.append(loop_cpu_time_s)
+            loop_wall_times_s.append(loop_wall_time_s)
+
+            extra_dict["loop_copy_mps_cpu_time_s_list"].append(loop_copy_mps_cpu_time_s)
+            extra_dict["loop_dmrg_optimization_cpu_time_s_list"].append(
+                loop_dmrg_optimization_cpu_time_s
+            )
+            extra_dict["loop_driver_initialize_system_cpu_time_s_list"].append(
+                loop_driver_initialize_system_cpu_time_s
+            )
+            extra_dict["loop_generate_initial_mps_cpu_time_s_list"].append(
+                loop_generate_initial_mps_cpu_time_s
+            )
+            extra_dict["loop_get_qchem_hami_mpo_cpu_time_s_list"].append(
+                loop_get_qchem_hami_mpo_cpu_time_s
+            )
+            extra_dict["loop_make_driver_cpu_time_s_list"].append(
+                loop_make_driver_cpu_time_s
+            )
+            extra_dict["loop_reorder_integrals_cpu_time_s_list"].append(
+                loop_reorder_integrals_cpu_time_s
+            )
+
+            extra_dict["loop_copy_mps_wall_time_s_list"].append(
+                loop_copy_mps_wall_time_s
+            )
+            extra_dict["loop_dmrg_optimization_wall_time_s_list"].append(
+                loop_dmrg_optimization_wall_time_s
+            )
+            extra_dict["loop_driver_initialize_system_wall_time_s_list"].append(
+                loop_driver_initialize_system_wall_time_s
+            )
+            extra_dict["loop_generate_initial_mps_wall_time_s_list"].append(
+                loop_generate_initial_mps_wall_time_s
+            )
+            extra_dict["loop_get_qchem_hami_mpo_wall_time_s_list"].append(
+                loop_get_qchem_hami_mpo_wall_time_s
+            )
+            extra_dict["loop_make_driver_wall_time_s_list"].append(
+                loop_make_driver_wall_time_s
+            )
+            extra_dict["loop_reorder_integrals_wall_time_s_list"].append(
+                loop_reorder_integrals_wall_time_s
+            )
 
         # Load for main loop calculations
         for i in range(1, 1000):
@@ -93,6 +326,73 @@ def get_data_from_incomplete_processing(data_file):
             discarded_weight = float(loop["sweep_max_discarded_weight"][()][-1])
             loop_cpu_time_s = float(loop["cpu_single_qchem_dmrg_calc_time_s"][()])
             loop_wall_time_s = float(loop["wall_single_qchem_dmrg_calc_time_s"][()])
+
+            loop_copy_mps_cpu_time_s = float(
+                preloop["/first_preloop_calc/dmrg_results/cpu_copy_mps_time_s"][()]
+            )
+            loop_dmrg_optimization_cpu_time_s = float(
+                preloop[
+                    "/first_preloop_calc/dmrg_results/cpu_dmrg_optimization_time_s"
+                ][()]
+            )
+            loop_driver_initialize_system_cpu_time_s = float(
+                preloop[
+                    "/first_preloop_calc/dmrg_results/cpu_driver_initialize_system_time_s"
+                ][()]
+            )
+            loop_generate_initial_mps_cpu_time_s = float(
+                preloop[
+                    "/first_preloop_calc/dmrg_results/cpu_generate_initial_mps_time_s"
+                ][()]
+            )
+            loop_get_qchem_hami_mpo_cpu_time_s = float(
+                preloop[
+                    "/first_preloop_calc/dmrg_results/cpu_get_qchem_hami_mpo_time_s"
+                ][()]
+            )
+            loop_make_driver_cpu_time_s = float(
+                preloop["/first_preloop_calc/dmrg_results/cpu_make_driver_time_s"][()]
+            )
+            loop_reorder_integrals_cpu_time_s = float(
+                preloop[
+                    "/first_preloop_calc/dmrg_results/cpu_reorder_integrals_time_s"
+                ][()]
+            )
+            # loop__cpu_time_s = float(preloop["/first_preloop_calc/dmrg_results/cpu_single_qchem_dmrg_calc_time_s"][()])
+
+            loop_copy_mps_wall_time_s = float(
+                preloop["/first_preloop_calc/dmrg_results/wall_copy_mps_time_s"][()]
+            )
+            loop_dmrg_optimization_wall_time_s = float(
+                preloop[
+                    "/first_preloop_calc/dmrg_results/wall_dmrg_optimization_time_s"
+                ][()]
+            )
+            loop_driver_initialize_system_wall_time_s = float(
+                preloop[
+                    "/first_preloop_calc/dmrg_results/wall_driver_initialize_system_time_s"
+                ][()]
+            )
+            loop_generate_initial_mps_wall_time_s = float(
+                preloop[
+                    "/first_preloop_calc/dmrg_results/wall_generate_initial_mps_time_s"
+                ][()]
+            )
+            loop_get_qchem_hami_mpo_wall_time_s = float(
+                preloop[
+                    "/first_preloop_calc/dmrg_results/wall_get_qchem_hami_mpo_time_s"
+                ][()]
+            )
+            loop_make_driver_wall_time_s = float(
+                preloop["/first_preloop_calc/dmrg_results/wall_make_driver_time_s"][()]
+            )
+            loop_reorder_integrals_wall_time_s = float(
+                preloop[
+                    "/first_preloop_calc/dmrg_results/wall_reorder_integrals_time_s"
+                ][()]
+            )
+            # loop_single_qchem_dmrg_calc_wall_time_s = float(preloop["/first_preloop_calc/dmrg_results/wall_single_qchem_dmrg_calc_time_s"][()])
+
             sweep_energies = loop["sweep_energies"][()].ravel()
             if "reordering_method_used" in loop:
                 reordering_method = loop["reordering_method_used"][()]
@@ -116,6 +416,48 @@ def get_data_from_incomplete_processing(data_file):
             loop_cpu_times_s.append(loop_cpu_time_s)
             loop_wall_times_s.append(loop_wall_time_s)
 
+            extra_dict["loop_copy_mps_cpu_time_s_list"].append(loop_copy_mps_cpu_time_s)
+            extra_dict["loop_dmrg_optimization_cpu_time_s_list"].append(
+                loop_dmrg_optimization_cpu_time_s
+            )
+            extra_dict["loop_driver_initialize_system_cpu_time_s_list"].append(
+                loop_driver_initialize_system_cpu_time_s
+            )
+            extra_dict["loop_generate_initial_mps_cpu_time_s_list"].append(
+                loop_generate_initial_mps_cpu_time_s
+            )
+            extra_dict["loop_get_qchem_hami_mpo_cpu_time_s_list"].append(
+                loop_get_qchem_hami_mpo_cpu_time_s
+            )
+            extra_dict["loop_make_driver_cpu_time_s_list"].append(
+                loop_make_driver_cpu_time_s
+            )
+            extra_dict["loop_reorder_integrals_cpu_time_s_list"].append(
+                loop_reorder_integrals_cpu_time_s
+            )
+
+            extra_dict["loop_copy_mps_wall_time_s_list"].append(
+                loop_copy_mps_wall_time_s
+            )
+            extra_dict["loop_dmrg_optimization_wall_time_s_list"].append(
+                loop_dmrg_optimization_wall_time_s
+            )
+            extra_dict["loop_driver_initialize_system_wall_time_s_list"].append(
+                loop_driver_initialize_system_wall_time_s
+            )
+            extra_dict["loop_generate_initial_mps_wall_time_s_list"].append(
+                loop_generate_initial_mps_wall_time_s
+            )
+            extra_dict["loop_get_qchem_hami_mpo_wall_time_s_list"].append(
+                loop_get_qchem_hami_mpo_wall_time_s
+            )
+            extra_dict["loop_make_driver_wall_time_s_list"].append(
+                loop_make_driver_wall_time_s
+            )
+            extra_dict["loop_reorder_integrals_wall_time_s_list"].append(
+                loop_reorder_integrals_wall_time_s
+            )
+
         if "final_dmrg_results" in file_obj:
             print("Processed results available")
 
@@ -131,7 +473,7 @@ def get_data_from_incomplete_processing(data_file):
 
     num_loops = last_loop
     num_dmrg_calculations = len(dmrg_energies)
-    assert num_loops == num_dmrg_calculations - 2
+    assert num_loops == num_dmrg_calculations - subtract_count
     return (
         dmrg_energies,
         bond_dimensions,
@@ -145,6 +487,7 @@ def get_data_from_incomplete_processing(data_file):
         reordering_method_list,
         reordering_method_cpu_times_s,
         reordering_method_wall_times_s,
+        extra_dict,
     )
 
 
@@ -240,12 +583,25 @@ def add_dmrg_processing_basic(
     reordering_method_cpu_times_s,
     reordering_method_wall_times_s,
     data_dict,
+    calc_uuid=None,
 ):
     # Get worksheet name from fcidump name
     # take after . and before {
     fcidump_name = data_dict["fcidump"]
-    worksheet_name = fcidump_name.split(".")[1].split("{")[0]
+    # print(fcidump_name)
+    if fcidump_name[:8] == "FCIDUMP_":
+        ws_prefix = fcidump_name[8:]
+    elif fcidump_name[:8] == "fcidump.":
+        ws_prefix = fcidump_name.split(".")[1].split("{")[0]
+    else:
+        raise ValueError(f"fcidump name not recognized:{fcidump_name}")
 
+    if calc_uuid is not None:
+        worksheet_name = ws_prefix + "_" + calc_uuid
+    else:
+        worksheet_name = ws_prefix
+        print("else")
+    # print(f"worksheet_name: {worksheet_name}")
     # Create a new worksheet
     ws = workbook.create_sheet(title=worksheet_name)
 
@@ -578,6 +934,7 @@ def setup_workbook(
         # data_file = (
         #     data_file_path / Path(data_dict["Calc UUID"]) / Path("dmrg_results.hdf5")
         # )
+        print(f"Processing {data_file}")
         # Get DMRG energy, bond dimensions, and truncation error for each loop
         (
             dmrg_energies,
@@ -592,6 +949,7 @@ def setup_workbook(
             reordering_method_list,
             reordering_method_cpu_times_s,
             reordering_method_wall_times_s,
+            extra_dict,
         ) = get_data_from_incomplete_processing(data_file)
 
         # Min dmrg energy
@@ -626,6 +984,7 @@ def setup_workbook(
                 reordering_method_list_small_bd,
                 reordering_method_cpu_times_s_small_bd,
                 reordering_method_wall_times_s_small_bd,
+                extra_dict_small_bd,
             ) = get_data_from_incomplete_processing(data_file_small_bd)
             dmrg_energies = np.hstack((dmrg_energies_small_bd, dmrg_energies))
             bond_dimensions = np.hstack((bond_dimensions_small_bd, bond_dimensions))
@@ -673,6 +1032,7 @@ def setup_workbook(
             reordering_method_cpu_times_s=reordering_method_cpu_times_s,
             reordering_method_wall_times_s=reordering_method_wall_times_s,
             data_dict=data_dict,
+            calc_uuid=data_dict["Calc UUID"][:4],
         )
 
         # Save performance metrics to csv
@@ -748,14 +1108,33 @@ def setup_workbook(
         data_dict_list_df.to_csv(memory_summary_csv_filename, index=False)
 
 
-def produce_set_of_solution_json_filesdef(
+contact_info_temp = [
+    {
+        "name": "temp",
+        "email": "temp",
+        "institution": "temp",
+    }
+]
+
+compute_details_temp = {
+    "Machine": "Temp",
+    "CPU": "Temp",
+    "RAM": "Temp",
+}
+
+
+def produce_set_of_solution_json_files(
     data_file_path,
     data_dict_list,
-    csv_storage_path="./",
-    bd_extrapolation_dict=None,
+    json_storage_path="./",
+    extrapolation_dict=None,
+    instance_dict=None,
     memory_summary_csv_filename="./memory_summary.csv",
     csv_uuid=False,
+    contact_info=contact_info_temp,
+    compute_details=compute_details_temp,
 ):
+    json_filename_list = []
     for data_dict in data_dict_list:
         # If data_file_path is a list of paths, try each path until one is found where the file exists
         if isinstance(data_file_path, list):
@@ -780,67 +1159,303 @@ def produce_set_of_solution_json_filesdef(
             reordering_method_list,
             reordering_method_cpu_times_s,
             reordering_method_wall_times_s,
+            extra_dict,
         ) = get_data_from_incomplete_processing(data_file)
 
-        produce_solution_json(
+        data_dict["dmrg_energies"] = dmrg_energies
+        data_dict["bond_dimensions"] = bond_dimensions
+        data_dict["discarded_weights"] = discarded_weights
+        data_dict["num_loops"] = num_loops
+        data_dict["num_dmrg_calculations"] = num_dmrg_calculations
+        data_dict["loop_cpu_times_s"] = loop_cpu_times_s
+        data_dict["loop_wall_times_s"] = loop_wall_times_s
+        data_dict["num_sweeps_list"] = num_sweeps_list
+        data_dict["final_sweep_delta_energies_list"] = final_sweep_delta_energies_list
+        data_dict["reordering_method_list"] = reordering_method_list
+        data_dict["reordering_method_cpu_times_s"] = reordering_method_cpu_times_s
+        data_dict["reordering_method_wall_times_s"] = reordering_method_wall_times_s
+        data_dict["extra_dict"] = extra_dict
+
+        # Get extrapolation dict if data_dict["Calc UUID"] in dict
+        if extrapolation_dict is not None:
+            if data_dict["Calc UUID"] in extrapolation_dict:
+                extrapolation_dict_local = extrapolation_dict[data_dict["Calc UUID"]]
+            else:
+                extrapolation_dict_local = None
+
+        if instance_dict is not None:
+            if data_dict["Calc UUID"] in instance_dict:
+                instance_dict_local = instance_dict[data_dict["Calc UUID"]]
+                problem_instance_uuid = instance_dict_local["problem_instance_uuid"]
+                instance_data_object_uuid = instance_dict_local[
+                    "instance_data_object_uuid"
+                ]
+                short_name = instance_dict_local["short_name"]
+            else:
+                problem_instance_uuid = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+                instance_data_object_uuid = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+                short_name = data_dict["fcidump"]
+
+        json_filename = produce_solution_json(
             data_dict,
-            energy=np.min(dmrg_energies),
-            contact_info="temp",
+            contact_info=contact_info,
             compute_hardware_type="classical_computer",
-            compute_details="none",
-            digital_signature="none",
+            compute_details=compute_details,
+            digital_signature=None,
+            json_storage_path=json_storage_path,
+            extrapolation_dict=extrapolation_dict_local,
+            problem_instance_uuid=problem_instance_uuid,
+            instance_data_object_uuid=instance_data_object_uuid,
+            short_name=short_name,
         )
+        json_filename_list.append(json_filename)
+
+    return json_filename_list
+
+
+# contact_info_temp_array = [
+#     "temp",
+#     "temp",
+#     "temp",
+# ]
 
 
 def produce_solution_json(
     data_dict,
-    energy,
-    contact_info="temp",
+    contact_info=contact_info_temp,
     compute_hardware_type="classical_computer",
-    compute_details="none",
-    digital_signature="none",
+    compute_details=compute_details_temp,
+    digital_signature=None,
+    json_storage_path="./",
+    extrapolation_dict=None,
+    problem_instance_uuid="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    instance_data_object_uuid="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    short_name="NONE",
 ):
-    problem_instance_uuid = data_dict["instance ID"]
-    solution_uuid = data_dict["Calc UUID"]
-    short_name = data_dict["fcidump"]
-    overall_time = {
-        "wall_clock_start_time": "temp",
-        "wall_clock_stop_time": "temp",
-        "seconds": data_dict["CC Wall Time"],
-    }
-    run_time = {
-        "overall_time": overall_time,
-        "preprocessing_time": "temp",
-        "algorithm_run_time": "temp",
-        "postprocessing_time": "temp",
-    }
+    # problem_instance_uuid = data_dict["instance ID"]
 
-    solution_data = {
-        "instance_data_object_uuid": problem_instance_uuid,
-        "run_time": run_time,
-        "energy": energy,
-        "energy_units": "Hartree",
-    }
+    # solution_uuid = data_dict["Calc UUID"]
+    # short_name = data_dict["fcidump"]
 
-    # Timestamp in ISO 8601 format in UTC (note the `Z`)
-    creation_timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    extra_dict = data_dict["extra_dict"]
 
-    sol_dict = {
-        "solution_uuid": solution_uuid,
-        "problem_instance_uuid": problem_instance_uuid,
-        "short_name": short_name,
-        "creation_timestamp": creation_timestamp,
-        "contact_info": contact_info,
-        "solution_data": solution_data,
-        "compute_hardware_type": compute_hardware_type,
-        "compute_details": compute_details,
-        "digital_signature": digital_signature,
-        "$schema": "https://github.com/jp7745/qb-file-schemas/blob/main/schemas/solution.schema.0.0.1.json",
-    }
+    dmrg_energies = data_dict["dmrg_energies"]
+    bond_dimensions = data_dict["bond_dimensions"]
+    discarded_weights = data_dict["discarded_weights"]
 
-    # Save solution to json
-    json_filename = Path(short_name + "_" + solution_uuid + ".json")
-    with open(json_filename, "w") as json_file:
-        json.dump(sol_dict, json_file, indent=4)
+    solution_data = []
+
+    for iiter in range(len(dmrg_energies)):
+
+        overall_time = {
+            "wall_clock_start_time": "9999-12-31T23:59:90.999Z",
+            "wall_clock_stop_time": "9999-12-31T23:59:99.999Z",
+            "seconds": float(data_dict["loop_wall_times_s"][iiter]),
+        }
+
+        preprocessing_sum = (
+            float(extra_dict["loop_driver_initialize_system_wall_time_s_list"][iiter])
+            + float(extra_dict["loop_generate_initial_mps_wall_time_s_list"][iiter])
+            + float(extra_dict["loop_get_qchem_hami_mpo_wall_time_s_list"][iiter])
+            + float(extra_dict["loop_reorder_integrals_wall_time_s_list"][iiter])
+            + float(extra_dict["loop_make_driver_wall_time_s_list"][iiter])
+        )
+
+        preprocessing_time = {
+            "wall_clock_start_time": "9999-12-31T23:59:90.999Z",
+            "wall_clock_stop_time": "9999-12-31T23:59:99.999Z",
+            "seconds": preprocessing_sum,
+        }
+
+        algorithm_run_time = {
+            "wall_clock_start_time": "9999-12-31T23:59:90.999Z",
+            "wall_clock_stop_time": "9999-12-31T23:59:99.999Z",
+            "seconds": float(
+                extra_dict["loop_dmrg_optimization_wall_time_s_list"][iiter]
+            ),
+        }
+
+        postprocessing_time = {
+            "wall_clock_start_time": "9999-12-31T23:59:90.999Z",
+            "wall_clock_stop_time": "9999-12-31T23:59:99.999Z",
+            "seconds": float(extra_dict["loop_copy_mps_wall_time_s_list"][iiter]),
+        }
+
+        overall_cpu_time = {
+            "seconds": float(data_dict["loop_cpu_times_s"][iiter]),
+        }
+
+        preprocessing_sum_cpu = (
+            float(extra_dict["loop_driver_initialize_system_cpu_time_s_list"][iiter])
+            + float(extra_dict["loop_generate_initial_mps_cpu_time_s_list"][iiter])
+            + float(extra_dict["loop_get_qchem_hami_mpo_cpu_time_s_list"][iiter])
+            + float(extra_dict["loop_reorder_integrals_cpu_time_s_list"][iiter])
+            + float(extra_dict["loop_make_driver_cpu_time_s_list"][iiter])
+        )
+
+        preprocessing_cpu_time = {
+            "seconds": preprocessing_sum_cpu,
+        }
+
+        algorithm_run_cpu_time = {
+            "seconds": float(
+                extra_dict["loop_dmrg_optimization_cpu_time_s_list"][iiter]
+            ),
+        }
+
+        postprocessing_cpu_time = {
+            "seconds": float(extra_dict["loop_copy_mps_cpu_time_s_list"][iiter]),
+        }
+
+        time_temp = overall_time
+
+        run_time = {
+            "overall_time": overall_time,
+            "preprocessing_time": preprocessing_time,
+            "algorithm_run_time": algorithm_run_time,
+            "postprocessing_time": postprocessing_time,
+        }
+        run_time_cpu = {
+            "overall_time": overall_cpu_time,
+            "preprocessing_time": preprocessing_cpu_time,
+            "algorithm_run_time": algorithm_run_cpu_time,
+            "postprocessing_time": postprocessing_cpu_time,
+        }
+
+        solution_data.append(
+            {
+                "instance_data_object_uuid": instance_data_object_uuid,
+                "run_time": run_time,
+                "energy": dmrg_energies[iiter],
+                "energy_units": "Hartree",
+                "run_time_cpu": run_time_cpu,
+                "bond_dimension": bond_dimensions[iiter],
+                "discarded_weight": discarded_weights[iiter],
+                "calculation_uuid": data_dict["Calc UUID"],
+            }
+        )
+
+        # Add memory info for largest bond dimension
+        if iiter == len(dmrg_energies) - 1:
+            solution_data[-1]["max_RAM_used_GiB"] = data_dict["RSS Memory Usage (GiB)"]
+
+    # Extrapolated Data
+    if extrapolation_dict is not None:
+        overall_time = {
+            "wall_clock_start_time": "9999-12-31T23:59:90.999Z",
+            "wall_clock_stop_time": "9999-12-31T23:59:99.999Z",
+            "seconds": 0.0,
+        }
+
+        preprocessing_time = {
+            "wall_clock_start_time": "9999-12-31T23:59:90.999Z",
+            "wall_clock_stop_time": "9999-12-31T23:59:99.999Z",
+            "seconds": 0.0,
+        }
+
+        algorithm_run_time = {
+            "wall_clock_start_time": "9999-12-31T23:59:90.999Z",
+            "wall_clock_stop_time": "9999-12-31T23:59:99.999Z",
+            "seconds": 0.0,
+        }
+
+        postprocessing_time = {
+            "wall_clock_start_time": "9999-12-31T23:59:90.999Z",
+            "wall_clock_stop_time": "9999-12-31T23:59:99.999Z",
+            "seconds": 0.0,
+        }
+
+        run_time = {
+            "overall_time": overall_time,
+            "preprocessing_time": preprocessing_time,
+            "algorithm_run_time": algorithm_run_time,
+            "postprocessing_time": postprocessing_time,
+        }
+        solution_data.append(
+            {
+                "instance_data_object_uuid": instance_data_object_uuid,
+                "instance_data_object_short_name": data_dict["fcidump"],
+                "run_time": run_time,
+                "energy": 0.0,
+                "extrapolated_energy": extrapolation_dict["energy"],
+                "energy_units": "Hartree",
+                "extrapolated_energy_95_ci": extrapolation_dict["energy_95_ci"],
+                "extrapolated_bond_dimension": extrapolation_dict[
+                    "extrapolated_bond_dimension"
+                ],
+                "extrapolated_bond_dimension_lower_bound": extrapolation_dict[
+                    "extrapolated_bond_dimension_lower_bound"
+                ],
+                "extrapolated_bond_dimension_upper_bound": extrapolation_dict[
+                    "extrapolated_bond_dimension_upper_bound"
+                ],
+            }
+        )
+
+    else:
+        pass
+
+    # solution_data = [
+    #     problem_instance_uuid,
+    #     run_time,
+    #     energy,
+    #     # "Hartree",
+    # ]
+
+    # Check if json file that starts with problem_instance_uuid already exists
+    # If not, create a new json file
+    # If it does, append to the existing json file
+    json_check_path = Path(json_storage_path)
+    json_check_path.mkdir(parents=True, exist_ok=True)
+    json_files = list(json_check_path.glob(f"{problem_instance_uuid}_*.json"))
+    if len(json_files) > 0:
+
+        # Load the existing json file
+        with open(json_files[0], "r") as json_file:
+            sol_dict = json.load(json_file)
+
+        # Append the new solution data
+        sol_dict["solution_data"].extend(solution_data)
+
+        # Add/update last modified timestamp
+        last_modified_timestamp = datetime.datetime.now(
+            datetime.timezone.utc
+        ).isoformat()
+        last_modified_timestamp = last_modified_timestamp[:-6] + "Z"
+        sol_dict["last_modified_timestamp"] = last_modified_timestamp
+
+        # Save solution to json
+        json_filename = json_files[0]
+        with open(json_filename, "w") as json_file:
+            json.dump(sol_dict, json_file, indent=4)
+
+    else:
+
+        # Timestamp in ISO 8601 format in UTC (note the `Z`) with final Z
+        creation_timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        # Replace the time zone shift with Z
+        creation_timestamp = creation_timestamp[:-6] + "Z"
+
+        # Generate new solution uuid
+        solution_uuid = str(uuid.uuid4())
+        sol_dict = {
+            "solution_uuid": solution_uuid,
+            "problem_instance_uuid": problem_instance_uuid,
+            "short_name": short_name,
+            "creation_timestamp": creation_timestamp,
+            "contact_info": contact_info,
+            "solution_data": solution_data,
+            "compute_hardware_type": compute_hardware_type,
+            "compute_details": compute_details,
+            "digital_signature": digital_signature,
+            "$schema": "https://github.com/jp7745/qb-file-schemas/blob/main/schemas/solution.schema.0.0.1.json",
+        }
+
+        # Save solution to json
+        json_filename = Path(json_storage_path) / Path(
+            problem_instance_uuid + "_sol_" + solution_uuid + ".json"
+        )
+        with open(json_filename, "w") as json_file:
+            json.dump(sol_dict, json_file, indent=4)
 
     return json_filename
