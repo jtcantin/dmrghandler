@@ -322,6 +322,15 @@ def gen_config_files(
             # "core_energy",
         }
 
+        if "sweep_start_list" in dmrg_advanced_config:
+            dmrg_advanced_config["sweep_start"] = common_or_list(
+                dmrg_advanced_config["sweep_start_list"], data_iter
+            )
+
+            dmrg_advanced_config["initial_sweep_direction"] = (
+                dmrg_advanced_config["sweep_start"] % 2 == 0
+            )
+            
         config_dict_single_file = {
             "data_config": data_config,
             "looping_config": looping_config,
