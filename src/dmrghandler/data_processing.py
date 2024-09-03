@@ -924,13 +924,23 @@ def setup_workbook(
         # If data_file_path is a list of paths, try each path until one is found where the file exists
         if isinstance(data_file_path, list):
             for path in data_file_path:
+
                 data_file = (
                     Path(path)
                     / Path(data_dict["Calc UUID"])
                     / Path("dmrg_results.hdf5")
                 )
+
                 if data_file.exists():
                     break
+                else:
+                    data_file = (
+                        Path(path)
+                        / Path(data_dict["fcidump"][8:] + "_" + data_dict["Calc UUID"])
+                        / Path("dmrg_results.hdf5")
+                    )
+                    if data_file.exists():
+                        break
         # data_file = (
         #     data_file_path / Path(data_dict["Calc UUID"]) / Path("dmrg_results.hdf5")
         # )
@@ -1067,14 +1077,37 @@ def setup_workbook(
             encoding=None,
         )
     # Save memory summary to csv
+    # "fcidump.9_mo_n2-_noncan_0.2_new": {
+    #     "energy": -4800.649487589950000,
+    #     "energy_95_ci": 0.000172466678630,
+    #     "extrapolated_bond_dimension": 325,
+    #     "extrapolated_bond_dimension_lower_bound": 304,
+    #     "extrapolated_bond_dimension_upper_bound": 349,
+    #     "UUID": "54e97bd0-e822-41cc-9c8f-d166194df2b5",
+    # },
     if bd_extrapolation_dict is not None:
-        bd_extrap_series = pd.Series(bd_extrapolation_dict)
+        extrapolation_df = pd.DataFrame.from_dict(bd_extrapolation_dict, orient='index')
+        print(extrapolation_df)
+        print(extrapolation_df.columns)
+        # energy_series = extrapolation_df["energy"]
+        # energy_95_ci_series = extrapolation_df["energy_95_ci"]
+        # extrapolated_bond_dimension_series = extrapolation_df["BD Extrapolation"]
+        # extrapolated_bond_dimension_lower_bound_series = (
+        #     extrapolation_df["BD Extrapolation Lower Bound"]
+        # )
+        # extrapolated_bond_dimension_upper_bound_series = (
+        #     extrapolation_df["BD Extrapolation Upper Bound"]
+        # )
+        # calc_uuid_series = extrapolation_df["UUID"]
+
+        # bd_extrap_series = extrapolated_bond_dimension_series
+        # bd_extrap_series = pd.Series(bd_extrapolation_dict)
         # Join the bd_extrap_series with the data_dict_list
         data_dict_list_df = pd.DataFrame(data_dict_list)
         data_dict_list_df = data_dict_list_df.set_index("fcidump")
-        bd_extrap_series = bd_extrap_series.to_frame()
-        bd_extrap_series.columns = ["BD Extrapolation"]
-        data_dict_list_df = data_dict_list_df.join(bd_extrap_series)
+        # bd_extrap_series = bd_extrap_series.to_frame()
+        # bd_extrap_series.columns = ["BD Extrapolation"]
+        data_dict_list_df = data_dict_list_df.join(extrapolation_df)
         data_dict_list_df = data_dict_list_df.reset_index()
         data_dict_list_df = data_dict_list_df.rename(columns={"index": "fcidump"})
 
@@ -1082,19 +1115,19 @@ def setup_workbook(
         data_dict_list_df["RSS Memory Usage (GiB) Extrapolated"] = data_dict_list_df[
             "RSS Memory Usage (GiB)"
         ] * (
-            data_dict_list_df["BD Extrapolation"] ** 2
+            data_dict_list_df["extrapolated_bond_dimension"] ** 2
             / data_dict_list_df["Max Bond Dimension"] ** 2
         )
         data_dict_list_df[
             "CPU Time at Max Bond Dimension (hr) Extrapolated"
         ] = data_dict_list_df["CPU Time at Max Bond Dimension (hr)"] * (
-            data_dict_list_df["BD Extrapolation"] ** 3
+            data_dict_list_df["extrapolated_bond_dimension"] ** 3
             / data_dict_list_df["Max Bond Dimension"] ** 3
         )
         data_dict_list_df[
             "Wall Time at Max Bond Dimension (hr) Extrapolated"
         ] = data_dict_list_df["Wall Time at Max Bond Dimension (hr)"] * (
-            data_dict_list_df["BD Extrapolation"] ** 3
+            data_dict_list_df["extrapolated_bond_dimension"] ** 3
             / data_dict_list_df["Max Bond Dimension"] ** 3
         )
         data_dict_list_df["RSS Memory Usage (GiB) Chem Accuracy"] = np.max(
