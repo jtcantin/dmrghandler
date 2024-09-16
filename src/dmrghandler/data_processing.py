@@ -930,10 +930,12 @@ def setup_workbook(
                     / Path(data_dict["Calc UUID"])
                     / Path("dmrg_results.hdf5")
                 )
+                print(data_file)
 
                 if data_file.exists():
                     break
                 else:
+                    print(f"File {data_file} does not exist")
                     data_file = (
                         Path(path)
                         / Path(data_dict["fcidump"][8:] + "_" + data_dict["Calc UUID"])
@@ -1111,6 +1113,11 @@ def setup_workbook(
         data_dict_list_df = data_dict_list_df.reset_index()
         data_dict_list_df = data_dict_list_df.rename(columns={"index": "fcidump"})
 
+        if "total_CPU Time at Max Bond Dimension (hr)" in data_dict_list_df:
+            data_dict_list_df["CPU Time at Max Bond Dimension (hr)"] = data_dict_list_df[
+                "total_CPU Time at Max Bond Dimension (hr)"
+            ]
+
         # Use quadratic scaling for the RSS memory usage for extapolated BD, and for CPU and Wall time (cubic)
         data_dict_list_df["RSS Memory Usage (GiB) Extrapolated"] = data_dict_list_df[
             "RSS Memory Usage (GiB)"
@@ -1137,6 +1144,15 @@ def setup_workbook(
             ],
             axis=0,
         )
+
+        if "Sweep Normalized CPU Time at Max Bond Dimension (hr)" in data_dict_list_df:
+            data_dict_list_df[
+                "Sweep Normalized CPU Time at Max Bond Dimension (hr) Extrapolated"
+            ] = data_dict_list_df["Sweep Normalized CPU Time at Max Bond Dimension (hr)"] * (
+                data_dict_list_df["extrapolated_bond_dimension"] ** 3
+                / data_dict_list_df["Max Bond Dimension"] ** 3
+            )
+
 
         data_dict_list_df.to_csv(memory_summary_csv_filename, index=False)
 
