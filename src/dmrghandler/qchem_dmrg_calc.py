@@ -109,6 +109,11 @@ def single_qchem_dmrg_calc(
         "stack_mem_ratio"
     ]  # Default value is 0.4, ratio of stack memory to total memory
 
+    if "keep_initial_ket_bool" in dmrg_parameters.keys():
+        keep_initial_ket = dmrg_parameters["keep_initial_ket_bool"]
+    else:
+        keep_initial_ket = True
+
     print_system_info(
         f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
     )
@@ -336,8 +341,12 @@ def single_qchem_dmrg_calc(
     cpu_generate_initial_mps_start_time_ns = time.process_time_ns()
     if initial_mps_method == "random":
         driver.bw.b.Random.rand_seed(init_state_seed)
+        if keep_initial_ket:
+            tag_initial = "ket_optimized"
+        else:
+            tag_initial = "init_ket"
         initial_ket = driver.get_random_mps(
-            tag="init_ket",
+            tag=tag_initial,
             bond_dim=init_state_bond_dimension,
             center=0,  # Default value, canonical center of MPS
             dot=2,  # Default value, site type of MPS
@@ -424,7 +433,10 @@ def single_qchem_dmrg_calc(
 
     wall_copy_mps_start_time_ns = time.perf_counter_ns()
     cpu_copy_mps_start_time_ns = time.process_time_ns()
-    ket_optimized = driver.copy_mps(initial_ket, tag="ket_optimized")
+    if keep_initial_ket:
+        ket_optimized = driver.copy_mps(initial_ket, tag="ket_optimized")
+    else:
+        ket_optimized = initial_ket
     wall_copy_mps_end_time_ns = time.perf_counter_ns()
     cpu_copy_mps_end_time_ns = time.process_time_ns()
 

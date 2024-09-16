@@ -607,15 +607,22 @@ def save_dmrg_results(
         mps_id_str=calc_id_str,
         main_storage_file_path=main_storage_file_path,
     )
-    final_destination = str(
-        Path(mps_final_storage_path)
-        / Path(main_storage_file_path.parent.parent)
-        / Path(dmrg_results_saveable["initial_ket_storage"])
-    )
-    pyblock2.tools.saveMPStoDir(
-        mps=dmrg_results["initial_ket"],
-        mpsSaveDir=final_destination,
-    )
+
+    if "keep_initial_ket_bool" in dmrg_parameters.keys():
+        keep_initial_ket = dmrg_parameters["keep_initial_ket_bool"]
+    else:
+        keep_initial_ket = True
+
+    if keep_initial_ket:
+        final_destination = str(
+            Path(mps_final_storage_path)
+            / Path(main_storage_file_path.parent.parent)
+            / Path(dmrg_results_saveable["initial_ket_storage"])
+        )
+        pyblock2.tools.saveMPStoDir(
+            mps=dmrg_results["initial_ket"],
+            mpsSaveDir=final_destination,
+        )
 
     final_destination = str(
         Path(mps_final_storage_path)

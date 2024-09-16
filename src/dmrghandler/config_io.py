@@ -284,6 +284,11 @@ def gen_config_files(
         num_threads = common_or_list(config_dict["num_threads_list"], data_iter)
         n_mkl_threads = common_or_list(config_dict["n_mkl_threads_list"], data_iter)
 
+        if "keep_initial_ket_bool_list" in config_dict:
+            keep_initial_ket_bool = common_or_list(config_dict["keep_initial_ket_bool_list"], data_iter)
+        else:
+            keep_initial_ket_bool = True
+
         if "reordering_method_list" in config_dict:
             reordering_method = common_or_list(
                 config_dict["reordering_method_list"], data_iter
@@ -313,6 +318,7 @@ def gen_config_files(
             "symmetry_type": symmetry_type,
             "num_threads": num_threads,
             "n_mkl_threads": n_mkl_threads,
+            "keep_initial_ket_bool": keep_initial_ket_bool,
             # "num_orbitals",
             # "num_spin_orbitals",
             # "num_electrons",
