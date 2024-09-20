@@ -7,7 +7,7 @@ A usuage example for the Niagara cluster is `examples/example_niagara_prepare_ca
 ## Installation
 
 ```bash
-pip install --extra-index-url=https://block-hczhai.github.io/block2-preview/pypi/ git+https://github.com/jtcantin/dmrghandler
+python -m pip install --extra-index-url=https://block-hczhai.github.io/block2-preview/pypi/ git+https://github.com/jtcantin/dmrghandler
 ```
 
 Update with reinstallation of dependencies (recommended whenever `pyproject.toml` has changed):
