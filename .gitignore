@@ -231,3 +231,15 @@ examples/fcidump.*
 examples/solution_file_generation.ipynb
 examples/solution.schema.0.0.1.json
 tests/restart_temp_*/*
+catalyst_checkpoint_files/*
+*.chk
+/*.csv
+downfolding_output/*
+/*.ipynb
+/*.pdf
+/fcidump*
+/*.py
+/*.txt
+/*.json
+dmrghandling_practical/*
+tmp_dir/*

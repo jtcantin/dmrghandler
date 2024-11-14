@@ -301,6 +301,11 @@ def gen_config_files(
         else:
             restart_dir = None
 
+        if "calc_v_score_bool_list" in config_dict:
+            calc_v_score_bool = common_or_list(config_dict["calc_v_score_bool_list"], data_iter)
+        else:
+            calc_v_score_bool = False
+
         dmrg_basic_config = {
             "max_num_sweeps": max_num_sweeps,
             "energy_convergence_threshold": energy_convergence_threshold,
@@ -319,6 +324,7 @@ def gen_config_files(
             "num_threads": num_threads,
             "n_mkl_threads": n_mkl_threads,
             "keep_initial_ket_bool": keep_initial_ket_bool,
+            "calc_v_score_bool": calc_v_score_bool,
             # "num_orbitals",
             # "num_spin_orbitals",
             # "num_electrons",

@@ -128,6 +128,16 @@ def dmrg_central_loop(
     )
     wall_first_preloop_start_ns = time.perf_counter_ns()
     cpu_first_preloop_start_ns = time.process_time_ns()
+    if "calc_v_score_bool" in dmrg_parameters.keys():
+        calc_v_score_bool = dmrg_parameters["calc_v_score_bool"]
+    else:
+        calc_v_score_bool = False
+        
+    if calc_v_score_bool:
+        dmrg_parameters["calc_1BD_energy_now"] = True
+    else:
+        dmrg_parameters["calc_1BD_energy_now"] = False
+
     dmrg_results = qchem_dmrg_calc.single_qchem_dmrg_calc_mem_tracking(
         one_body_tensor=one_body_tensor,
         two_body_tensor=two_body_tensor,
@@ -174,6 +184,7 @@ def dmrg_central_loop(
     log.info(
         f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
     )
+    dmrg_parameters["calc_1BD_energy_now"] = False
 
     if "do_single_calc" in dmrg_parameters.keys() and dmrg_parameters["do_single_calc"]:
         loop_results = {

@@ -114,6 +114,11 @@ def single_qchem_dmrg_calc(
     else:
         keep_initial_ket = True
 
+    if "calc_v_score_bool" in dmrg_parameters.keys():
+        calc_v_score_bool = dmrg_parameters["calc_v_score_bool"]
+    else:
+        calc_v_score_bool = False
+
     print_system_info(
         f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
     )
@@ -152,6 +157,25 @@ def single_qchem_dmrg_calc(
     print_system_info(
         f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
     )
+    if "calc_1BD_energy_now" in dmrg_parameters.keys():
+        if dmrg_parameters["calc_1BD_energy_now"]:
+            hf_energy = get_bd_1_dmrg_energy(
+                dmrg_parameters=dmrg_parameters,
+                symmetry_type=symmetry_type,
+                n_sites=num_orbitals,
+                n_elec=num_electrons,
+                spin=spin,
+                orb_sym=orb_sym,
+                one_body_tensor=one_body_tensor,
+                two_body_tensor_factor_half=two_body_tensor_factor_half,
+                ecore=core_energy,
+                iprint=verbosity,
+            )
+            dmrg_parameters["hf_energy"] = hf_energy
+
+        elif not dmrg_parameters["calc_1BD_energy_now"] and calc_v_score_bool:
+            hf_energy = dmrg_parameters["hf_energy"]
+
     log.debug(f"DMRG parameters right before driver initialization: {dmrg_parameters}")
     # If start sweep not zero, then the initial MPS is loaded from the restart directory
 
@@ -159,11 +183,9 @@ def single_qchem_dmrg_calc(
         # If it already exists, clean out the scratch directory
         if os.path.exists(temp_dir):
             shutil.rmtree(temp_dir)
-        
 
         # Copy the MPS from the restart directory to the scratch directory
         shutil.copytree(restart_dir, temp_dir)
-        
 
     wall_make_driver_start_time_ns = time.perf_counter_ns()
     cpu_make_driver_start_time_ns = time.process_time_ns()
@@ -433,10 +455,13 @@ def single_qchem_dmrg_calc(
 
     wall_copy_mps_start_time_ns = time.perf_counter_ns()
     cpu_copy_mps_start_time_ns = time.process_time_ns()
+    initial_ket_energy = driver.expectation(initial_ket, qchem_hami_mpo, initial_ket)
+
     if keep_initial_ket:
         ket_optimized = driver.copy_mps(initial_ket, tag="ket_optimized")
     else:
         ket_optimized = initial_ket
+
     wall_copy_mps_end_time_ns = time.perf_counter_ns()
     cpu_copy_mps_end_time_ns = time.process_time_ns()
 
@@ -507,6 +532,74 @@ def single_qchem_dmrg_calc(
         - cpu_single_qchem_dmrg_calc_start_time_ns
     )
 
+    if calc_v_score_bool:
+        print_system_info(
+            f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
+        )
+        wall_v_score_start_time_ns = time.perf_counter_ns()
+        cpu_v_score_start_time_ns = time.process_time_ns()
+        # # Diagonalize the one-body tensor to get the orbital energies
+        # orbital_energies, _ = np.linalg.eigh(one_body_tensor_reordered)
+        (
+            h_min_e_ket_norm,
+            variance,
+            v_score_numerator,
+            deviation_init_ket,
+            v_score_init_ket,
+            hf_energy,
+            deviation_hf,
+            v_score_hartree_fock,
+        ) = calc_v_score(
+            ket=ket_optimized,
+            hamiltonian_mpo=qchem_hami_mpo,
+            num_electrons=num_electrons,
+            driver=driver,
+            init_ket=None,
+            # dmrg_parameters=dmrg_parameters,
+            # symmetry_type=symmetry_type,
+            # n_sites=num_orbitals,
+            # n_elec=num_electrons,
+            # spin=spin,
+            # orb_sym=orb_sym_reordered,
+            # one_body_tensor=one_body_tensor_reordered,
+            # two_body_tensor_factor_half=two_body_tensor_factor_half_reordered,
+            # ecore=core_energy,
+            # iprint=verbosity,
+            # orbital_energies=np.diag(one_body_tensor_reordered),
+            # orbital_energies=orbital_energies,
+            core_energy=core_energy,
+            ket_energy=sweep_energies[-1],
+            init_ket_energy=initial_ket_energy,
+            hf_energy=hf_energy,
+        )
+
+        wall_v_score_end_time_ns = time.perf_counter_ns()
+        cpu_v_score_end_time_ns = time.process_time_ns()
+
+        wall_v_score_time_ns = wall_v_score_end_time_ns - wall_v_score_start_time_ns
+        cpu_v_score_time_ns = cpu_v_score_end_time_ns - cpu_v_score_start_time_ns
+
+        log.info(f"wall_v_score_time_s: {wall_v_score_time_ns/1e9}")
+        log.info(f"cpu_v_score_time_s: {cpu_v_score_time_ns/1e9}")
+
+        v_score_result_dict = {
+            "h_min_e_optket_norm": h_min_e_ket_norm,
+            "optket_variance": variance,
+            "v_score_numerator": v_score_numerator,
+            "deviation_init_ket": deviation_init_ket,
+            "v_score_init_ket": v_score_init_ket,
+            "hf_energy": hf_energy,
+            "deviation_hf": deviation_hf,
+            "v_score_hartree_fock": v_score_hartree_fock,
+            "initial_ket_energy": initial_ket_energy,
+        }
+        for key, value in v_score_result_dict.items():
+            log.info(f"{key}: {value}")
+
+    print_system_info(
+        f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
+    )
+
     dmrg_discarded_weight = sweep_max_discarded_weight[-1]
     dmrg_results_dict = {
         "dmrg_driver": driver,
@@ -541,10 +634,14 @@ def single_qchem_dmrg_calc(
         "cpu_single_qchem_dmrg_calc_time_s": cpu_single_qchem_dmrg_calc_time_ns / 1e9,
         "reordering_indices_used": reordering_indices,
         "reordering_method_used": reordering_method,
+        "initial_ket_energy": initial_ket_energy,
     }
 
     if reorder_output_dict is not None:
         dmrg_results_dict.update(reorder_output_dict)
+
+    if calc_v_score_bool:
+        dmrg_results_dict.update(v_score_result_dict)
 
     return dmrg_results_dict
 
@@ -877,3 +974,273 @@ def reorder_integrals(
         reordering_indices,
         reorder_output_dict,
     )
+
+
+def calc_v_score(
+    ket,
+    hamiltonian_mpo,
+    num_electrons,
+    driver,
+    # orbital_energies,
+    core_energy,
+    hf_energy,
+    # dmrg_parameters,
+    # symmetry_type,
+    # n_sites,
+    # n_elec,
+    # spin,
+    # orb_sym,
+    # one_body_tensor,
+    # two_body_tensor_factor_half,
+    # ecore,
+    # iprint,
+    ket_energy=None,
+    init_ket=None,
+    init_ket_energy=None,
+):
+    """Get the V-score of the optimized MPS.
+    V-score = num_electrons*(Var E_opt) / (E_opt - E_oo)^2
+    where E_opt is the optimized energy, E_oo is the reference energy,
+    and Var E_opt is the variance of the optimized energy.
+    E_oo will be either the Hartee-Fock energy or the energy of the initial MPS.
+
+    Args:
+        ket (MPS): The optimized MPS.
+        hamiltonian_mpo (MPO): The Hamiltonian MPO.
+        num_electrons (int): The number of electrons.
+        driver (DMRGDriver): The DMRG driver.
+        init_ket (MPS): The initial (i.e. non-optimized) MPS.
+        orbital_energies (np.ndarray): The orbital energies.
+        core_energy (float): The core energy.
+        ket_energy (float, optional): The energy of the optimized MPS. Defaults to None.
+        init_ket_energy (float, optional): The energy of the initial MPS. Defaults to None.
+    """
+    if ket_energy is None:
+        ket_energy_local = driver.expectation(ket, hamiltonian_mpo, ket)
+
+    if init_ket_energy is None and init_ket is not None:
+        init_ket_energy = driver.expectation(init_ket, hamiltonian_mpo, init_ket)
+
+    elif init_ket_energy is None and init_ket is None:
+        raise ValueError("init_ket_energy and init_ket cannot both be None.")
+
+    # Remove core energy to reduce numerical error
+    init_ket_energy_local = init_ket_energy - core_energy
+    ket_energy_local = ket_energy - core_energy
+
+    #### CALCULATE VARIANCE ####
+    # We get variance as <ket|(H-E_ket)^2|ket>
+    # We do this instead of <ket|H^2|ket> - E_ket^2 to eliminate numerical error
+    # from subtracting two large numbers
+
+    # Set core energy of mpo to -ket_energy_local to get H-E_ket for the operator
+    # Note that the original core energy cancels out, so is left out here
+    log.info(f"core_energy: {core_energy}")
+    log.info(f"hamiltonian_mpo core_energy: {hamiltonian_mpo.const_e}")
+    hamiltonian_mpo.const_e = -1 * ket_energy_local
+    log.info(f"New hamiltonian_mpo core_energy: {hamiltonian_mpo.const_e}")
+
+    h_min_e_ket = driver.copy_mps(ket, tag="h_ket_optimized")
+    h_min_e_ket_norm = driver.multiply(  # (H-E_ket)|ket>
+        bra=h_min_e_ket,  # Take the orginal ket as the guess for the bra
+        mpo=hamiltonian_mpo,
+        ket=ket,
+        n_sweeps=30,
+        tol=1e-10,
+        bond_dims=None,
+        bra_bond_dims=None,  # Keep the bond dims the same as the ket
+        # bra_bond_dims=[30*ket.info.bond_dim]*300,
+        noises=None,
+        noise_mpo=None,
+        # thrds=[1e-15]*300,#None,
+        thrds=None,
+        left_mpo=None,
+        cutoff=1e-24,
+        linear_max_iter=4000,
+        linear_rel_conv_thrd=0.0,
+        proj_mpss=None,
+        proj_weights=None,
+        proj_bond_dim=-1,
+        solver_type=None,
+        right_weight=0.0,
+        iprint=3,
+        kernel=None,
+    )
+
+    variance = h_min_e_ket_norm**2
+
+    v_score_numerator = num_electrons * variance
+    deviation_init_ket = ket_energy_local - init_ket_energy_local
+
+    v_score_init_ket = v_score_numerator / (deviation_init_ket) ** 2
+
+    #     # hf_energy
+    #     hf_energy = get_bd_1_dmrg_energy(
+    #     dmrg_parameters,
+    #     symmetry_type,
+    #     n_sites,
+    #     n_elec,
+    #     spin,
+    #     orb_sym,
+    #     one_body_tensor,
+    #     two_body_tensor_factor_half,
+    #     ecore,
+    #     iprint,
+    # )
+    # indices = np.argsort(orbital_energies)
+    # log.info(f"indices: {indices}")
+    # log.info(f"orbital_energies: {orbital_energies}")
+    # # dets = "2" * (num_electrons // 2) + "+" * (num_electrons % 2) + "0" * (
+    # #     len(orbital_energies) - (num_electrons // 2 + num_electrons % 2)
+    # # )
+    # dets = "0" * len(orbital_energies)
+    # elec_count = num_electrons
+    # for iiter, index_value in enumerate(indices):
+    #     if elec_count > 1:
+    #         # dets[index_value] = "2"
+    #         dets = dets[:index_value] + "2" + dets[index_value + 1 :]
+    #         elec_count -= 2
+    #     elif elec_count == 1:
+    #         # dets[index_value] = "+"
+    #         dets = dets[:index_value] + "a" + dets[index_value + 1 :]
+    #         elec_count -= 1
+    #     else:
+    #         log.info(f"elec_count: {elec_count}")
+    #         break
+
+    # log.info(f"num_electrons: {num_electrons}")
+    # log.info(f"dets: {dets}")
+
+    # hf_mps = driver.get_mps_from_csf_coefficients(
+    #     dets=[dets],
+    #     dvals=[1.0],
+    #     tag="hf",
+    #     # dot=2,
+    #     # target=None,
+    #     # full_fci=True,
+    #     # left_vacuum=None,
+    #     # casci_ncore=0,
+    #     # casci_nvirt=0,
+    #     # casci_mask=None,
+    #     # mrci_order=0,
+    #     # iprint=1,
+    # )
+    # log.info(f"hamiltonian_mpo core_energy: {hamiltonian_mpo.const_e}")
+    # hamiltonian_mpo.const_e = 0.0
+    # log.info(f"New hamiltonian_mpo core_energy: {hamiltonian_mpo.const_e}")
+    # hf_energy_expectation = driver.expectation(hf_mps, hamiltonian_mpo, hf_mps)
+    # log.info(f"hf_energy_expectation: {hf_energy_expectation}")
+
+    # # # Double the mo_energy array to account for alpha and beta electrons
+    # # spin_orbital_energies = np.array(orbital_energies)
+    # # spin_orbital_energies = np.concatenate(
+    # #     (spin_orbital_energies, spin_orbital_energies)
+    # # )
+    # # # Sort from lowest to highest energy
+    # # spin_orbital_energies = np.sort(spin_orbital_energies)
+    # # log.info(f"spin_orbital_energies: {spin_orbital_energies}")
+
+    # # hf_energy = np.sum(spin_orbital_energies[:num_electrons])  # + core_energy
+
+    # hf_energy = hf_energy_expectation
+
+    hf_energy_local = hf_energy - core_energy
+    deviation_hf = ket_energy_local - hf_energy_local
+    v_score_hartree_fock = v_score_numerator / (deviation_hf) ** 2
+
+    # Reset core energy of mpo
+    hamiltonian_mpo.const_e = core_energy
+    log.info(f"Reset hamiltonian_mpo core_energy: {hamiltonian_mpo.const_e}")
+
+    log.info(f"ket_energy_local: {ket_energy_local}")
+    log.info(f"ket_energy: {ket_energy}")
+    log.info(f"init_ket_energy_local: {init_ket_energy_local}")
+    log.info(f"init_ket_energy: {init_ket_energy}")
+    log.info(f"hf_energy: {hf_energy}")
+    log.info(f"hf_energy_local: {hf_energy_local}")
+    # log.info(f"hf_energy_expectation: {hf_energy_expectation}")
+    log.info(f"deviation_hf: {deviation_hf}")
+    log.info(f"v_score_hartree_fock: {v_score_hartree_fock}")
+    log.info(f"deviation_init_ket: {deviation_init_ket}")
+    log.info(f"v_score_init_ket: {v_score_init_ket}")
+    log.info(f"h_min_e_ket_norm: {h_min_e_ket_norm}")
+    log.info(f"ket_energy_local^2: {ket_energy_local**2}")
+    log.info(f"variance: {variance}")
+    log.info(f"v_score_numerator: {v_score_numerator}")
+
+    return (
+        h_min_e_ket_norm,
+        variance,
+        v_score_numerator,
+        deviation_init_ket,
+        v_score_init_ket,
+        hf_energy,
+        deviation_hf,
+        v_score_hartree_fock,
+    )
+
+
+def get_bd_1_dmrg_energy(
+    dmrg_parameters,
+    symmetry_type,
+    n_sites,
+    n_elec,
+    spin,
+    orb_sym,
+    one_body_tensor,
+    two_body_tensor_factor_half,
+    ecore,
+    iprint,
+):
+    bond_dim = 1
+    # raise NotImplementedError(
+    #     "The 'fiedler, interaction matrix' reordering method is not implemented."
+    # )
+    log.debug("Calc energy for BD = 1 MPS")
+    # approx DMRG to get orbital_interaction_matrix
+
+    # print(dmrg_parameters["restart_dir"])
+    # input()
+    driver_local = DMRGDriver(
+        stack_mem=dmrg_parameters["stack_mem"],
+        scratch=dmrg_parameters["temp_dir"],
+        clean_scratch=True,  # Default value
+        restart_dir="./tmp_dir",
+        n_threads=dmrg_parameters["num_threads"],
+        # n_mkl_threads=n_mkl_threads,  # Default value is 1
+        symm_type=symmetry_type,
+        mpi=None,  # Default value
+        stack_mem_ratio=dmrg_parameters["stack_mem_ratio"],  # Default value 0.4
+        fp_codec_cutoff=1e-16,  # Default value 1e-16
+    )
+    driver_local.initialize_system(
+        n_sites=n_sites, n_elec=n_elec, spin=spin, orb_sym=orb_sym
+    )
+    mpo = driver_local.get_qc_mpo(
+        h1e=one_body_tensor,
+        g2e=two_body_tensor_factor_half,
+        ecore=ecore,
+        iprint=iprint,
+    )
+    ket = driver_local.get_random_mps(tag="bd_1", bond_dim=bond_dim, nroots=1)
+    energy = driver_local.dmrg(
+        mpo,
+        ket,
+        n_sweeps=50,
+        bond_dims=[bond_dim] * 30,
+        noises=[1e-4] * 4 + [1e-5] * 4 + [0] * (30 - 8),
+        thrds=[1e-10] * 30,
+        iprint=1,
+    )
+    log.info("BD = 1 DMRG energy = %20.15f" % energy)
+    sweep_bond_dims, sweep_max_discarded_weight, sweep_energies = (
+        driver_local.get_dmrg_results()
+    )
+    # Assert that the last change in sweep energy is less than 1e-6
+    sweep_energy_change = np.abs(sweep_energies[-1] - sweep_energies[-2])
+    log.info(f"sweep_energies: {sweep_energies}")
+    log.info(f"last_sweep_energy_change: {sweep_energy_change}")
+    assert (
+        sweep_energy_change < 1e-6
+    ), f"BD = 1 DMRG energy did not converge: {sweep_energies[-1]} - {sweep_energies[-2]} = {sweep_energies[-1] - sweep_energies[-2]}"
+    return energy
