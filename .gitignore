@@ -173,7 +173,6 @@ extract_dmrg_results_incompletely_processed_data.ipynb
 tests/data_storage/*
 tmp/*
 HEADER_FILE.py
-fcidump.test
 block2_fcidump.ipynb
 tests/model_hami/*
 tests/scratch_sim/*
