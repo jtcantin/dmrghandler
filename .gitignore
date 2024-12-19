@@ -243,3 +243,4 @@ downfolding_output/*
 /*.json
 dmrghandling_practical/*
 tmp_dir/*
+env_dmrghandler_mpi/*
