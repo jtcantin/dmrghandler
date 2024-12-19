@@ -53,10 +53,10 @@ class TestDmrgSinglePythonRun(unittest.TestCase):
         data_file_list = [
             ## "data_for_testing/1.0_BeH2_cc-pvtz_c8ad7a19-f5e7-44aa-bf38-8db419cb1031.hdf5",
             ## "data_for_testing/1.0_CH2_cc-pvdz_6_444895b0-6b73-4273-b7d7-579908f09c30.hdf5",
-            "data_for_testing/fcidump.2_co2_6-311++G__",  # Passes, gets FCI answer
-            "data_for_testing/fcidump.36_1ru_II_2pl_{'default' _ '6-31+G(d,p)', 'Ru' _ 'lanl2tz' }",  # Passes, gets FCI answer
-            "data_for_testing/fcidump.34_3ruo_IV_2pl_{'Ru' _ 'lanl2tz', 'default' _ '6-31+G(d,p)'}",  # Passes, gets FCI answer
-            "data_for_testing/fcidump.36_1ru_II_2pl_{'default' _ '6-31+G(d,p)', 'Ru' _ 'lanl2tz' }",  # Passes, gets FCI answer
+            "tests/test_data/fcidump.2_co2_6-311++G__",  # Passes, gets FCI answer
+            "tests/test_data/fcidump.36_1ru_II_2pl_{'default' _ '6-31+G(d,p)', 'Ru' _ 'lanl2tz' }",  # Passes, gets FCI answer
+            "tests/test_data/fcidump.34_3ruo_IV_2pl_{'Ru' _ 'lanl2tz', 'default' _ '6-31+G(d,p)'}",  # Passes, gets FCI answer
+            "tests/test_data/fcidump.36_1ru_II_2pl_{'default' _ '6-31+G(d,p)', 'Ru' _ 'lanl2tz' }",  # Passes, gets FCI answer
             # "data_for_testing/fcidump.32_2ru_III_3pl_{'default' _ '6-31+G(d,p)', 'Ru' _ 'lanl2tz' }",  # SIGFPE, (a segfault)
             # SIGFPE stack trace below; error appears in pyblock2/driver/core.py, line 2836 in dmrg:
             # Either it is pyblock2 that has the problem, or the problem is in the input data
