@@ -51,7 +51,7 @@ log = logger
 
 class TestDmrgWholeSingleCalc(unittest.TestCase):
     def test_run_file(self):
-        data_files_folder = Path("data_for_testing")
+        data_files_folder = Path("tests/test_data/")
         log.info("HERE")
         data_file_list_file = [
             ## "data_for_testing/1.0_BeH2_cc-pvtz_c8ad7a19-f5e7-44aa-bf38-8db419cb1031.hdf5",
