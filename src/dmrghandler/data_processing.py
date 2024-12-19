@@ -38,6 +38,15 @@ def get_data_from_incomplete_processing(data_file):
         "loop_get_qchem_hami_mpo_wall_time_s_list": [],
         "loop_make_driver_wall_time_s_list": [],
         "loop_reorder_integrals_wall_time_s_list": [],
+        "loop_bd1_vscore_list": [],
+        "loop_initial_state_vscore_list": [],
+        "loop_optket_variance_list": [],
+        "loop_initial_ket_energy_list": [],
+        "loop_v_score_numerator_list": [],
+        "loop_deviation_hf_list": [],
+        "loop_deviation_init_ket_list": [],
+        "loop_h_min_e_optket_norm_list": [],
+        "loop_hf_energy_list": [],
     }
     with h5py.File(data_file, "r") as file_obj:
         # Load for first preloop calculation
@@ -109,6 +118,35 @@ def get_data_from_incomplete_processing(data_file):
                 ()
             ]
         )
+        if "/first_preloop_calc/dmrg_results/v_score_hartree_fock" in preloop:
+            loop_bd1_vscore = float(
+                preloop["/first_preloop_calc/dmrg_results/v_score_hartree_fock"][()]
+            )
+            loop_initial_state_vscore = float(
+                preloop["/first_preloop_calc/dmrg_results/v_score_init_ket"][()]
+            )
+            loop_optket_variance = float(
+                preloop["/first_preloop_calc/dmrg_results/optket_variance"][()]
+            )
+            loop_initial_ket_energy = float(
+                preloop["/first_preloop_calc/dmrg_results/initial_ket_energy"][()]
+            )
+            loop_v_score_numerator = float(
+                preloop["/first_preloop_calc/dmrg_results/v_score_numerator"][()]
+            )
+            loop_deviation_hf = float(
+                preloop["/first_preloop_calc/dmrg_results/deviation_hf"][()]
+            )
+            loop_deviation_init_ket = float(
+                preloop["/first_preloop_calc/dmrg_results/deviation_init_ket"][()]
+            )
+            loop_h_min_e_optket_norm = float(
+                preloop["/first_preloop_calc/dmrg_results/h_min_e_optket_norm"][()]
+            )
+            loop_hf_energy = float(
+                preloop["/first_preloop_calc/dmrg_results/hf_energy"][()]
+            )
+
         # loop_single_qchem_dmrg_calc_wall_time_s = float(preloop["/first_preloop_calc/dmrg_results/wall_single_qchem_dmrg_calc_time_s"][()])
 
         sweep_energies = preloop["sweep_energies"][()].ravel()
@@ -170,6 +208,18 @@ def get_data_from_incomplete_processing(data_file):
         extra_dict["loop_reorder_integrals_wall_time_s_list"].append(
             loop_reorder_integrals_wall_time_s
         )
+        if "/first_preloop_calc/dmrg_results/v_score_hartree_fock" in preloop:
+            extra_dict["loop_bd1_vscore_list"].append(loop_bd1_vscore)
+            extra_dict["loop_initial_state_vscore_list"].append(
+                loop_initial_state_vscore
+            )
+            extra_dict["loop_optket_variance_list"].append(loop_optket_variance)
+            extra_dict["loop_initial_ket_energy_list"].append(loop_initial_ket_energy)
+            extra_dict["loop_v_score_numerator_list"].append(loop_v_score_numerator)
+            extra_dict["loop_deviation_hf_list"].append(loop_deviation_hf)
+            extra_dict["loop_deviation_init_ket_list"].append(loop_deviation_init_ket)
+            extra_dict["loop_h_min_e_optket_norm_list"].append(loop_h_min_e_optket_norm)
+            extra_dict["loop_hf_energy_list"].append(loop_hf_energy)
 
         # Load for second preloop calculation
         if "second_preloop_calc" in file_obj:
@@ -182,70 +232,100 @@ def get_data_from_incomplete_processing(data_file):
             loop_wall_time_s = float(preloop["wall_single_qchem_dmrg_calc_time_s"][()])
 
             loop_copy_mps_cpu_time_s = float(
-                preloop["/first_preloop_calc/dmrg_results/cpu_copy_mps_time_s"][()]
+                preloop["/second_preloop_calc/dmrg_results/cpu_copy_mps_time_s"][()]
             )
             loop_dmrg_optimization_cpu_time_s = float(
                 preloop[
-                    "/first_preloop_calc/dmrg_results/cpu_dmrg_optimization_time_s"
+                    "/second_preloop_calc/dmrg_results/cpu_dmrg_optimization_time_s"
                 ][()]
             )
             loop_driver_initialize_system_cpu_time_s = float(
                 preloop[
-                    "/first_preloop_calc/dmrg_results/cpu_driver_initialize_system_time_s"
+                    "/second_preloop_calc/dmrg_results/cpu_driver_initialize_system_time_s"
                 ][()]
             )
             loop_generate_initial_mps_cpu_time_s = float(
                 preloop[
-                    "/first_preloop_calc/dmrg_results/cpu_generate_initial_mps_time_s"
+                    "/second_preloop_calc/dmrg_results/cpu_generate_initial_mps_time_s"
                 ][()]
             )
             loop_get_qchem_hami_mpo_cpu_time_s = float(
                 preloop[
-                    "/first_preloop_calc/dmrg_results/cpu_get_qchem_hami_mpo_time_s"
+                    "/second_preloop_calc/dmrg_results/cpu_get_qchem_hami_mpo_time_s"
                 ][()]
             )
             loop_make_driver_cpu_time_s = float(
-                preloop["/first_preloop_calc/dmrg_results/cpu_make_driver_time_s"][()]
+                preloop["/second_preloop_calc/dmrg_results/cpu_make_driver_time_s"][()]
             )
             loop_reorder_integrals_cpu_time_s = float(
                 preloop[
-                    "/first_preloop_calc/dmrg_results/cpu_reorder_integrals_time_s"
+                    "/second_preloop_calc/dmrg_results/cpu_reorder_integrals_time_s"
                 ][()]
             )
-            # loop__cpu_time_s = float(preloop["/first_preloop_calc/dmrg_results/cpu_single_qchem_dmrg_calc_time_s"][()])
+            # loop__cpu_time_s = float(preloop["/second_preloop_calc/dmrg_results/cpu_single_qchem_dmrg_calc_time_s"][()])
 
             loop_copy_mps_wall_time_s = float(
-                preloop["/first_preloop_calc/dmrg_results/wall_copy_mps_time_s"][()]
+                preloop["/second_preloop_calc/dmrg_results/wall_copy_mps_time_s"][()]
             )
             loop_dmrg_optimization_wall_time_s = float(
                 preloop[
-                    "/first_preloop_calc/dmrg_results/wall_dmrg_optimization_time_s"
+                    "/second_preloop_calc/dmrg_results/wall_dmrg_optimization_time_s"
                 ][()]
             )
             loop_driver_initialize_system_wall_time_s = float(
                 preloop[
-                    "/first_preloop_calc/dmrg_results/wall_driver_initialize_system_time_s"
+                    "/second_preloop_calc/dmrg_results/wall_driver_initialize_system_time_s"
                 ][()]
             )
             loop_generate_initial_mps_wall_time_s = float(
                 preloop[
-                    "/first_preloop_calc/dmrg_results/wall_generate_initial_mps_time_s"
+                    "/second_preloop_calc/dmrg_results/wall_generate_initial_mps_time_s"
                 ][()]
             )
             loop_get_qchem_hami_mpo_wall_time_s = float(
                 preloop[
-                    "/first_preloop_calc/dmrg_results/wall_get_qchem_hami_mpo_time_s"
+                    "/second_preloop_calc/dmrg_results/wall_get_qchem_hami_mpo_time_s"
                 ][()]
             )
             loop_make_driver_wall_time_s = float(
-                preloop["/first_preloop_calc/dmrg_results/wall_make_driver_time_s"][()]
+                preloop["/second_preloop_calc/dmrg_results/wall_make_driver_time_s"][()]
             )
             loop_reorder_integrals_wall_time_s = float(
                 preloop[
-                    "/first_preloop_calc/dmrg_results/wall_reorder_integrals_time_s"
+                    "/second_preloop_calc/dmrg_results/wall_reorder_integrals_time_s"
                 ][()]
             )
-            # loop_single_qchem_dmrg_calc_wall_time_s = float(preloop["/first_preloop_calc/dmrg_results/wall_single_qchem_dmrg_calc_time_s"][()])
+            if "/second_preloop_calc/dmrg_results/v_score_hartree_fock" in preloop:
+                loop_bd1_vscore = float(
+                    preloop["/second_preloop_calc/dmrg_results/v_score_hartree_fock"][
+                        ()
+                    ]
+                )
+                loop_initial_state_vscore = float(
+                    preloop["/second_preloop_calc/dmrg_results/v_score_init_ket"][()]
+                )
+                loop_optket_variance = float(
+                    preloop["/second_preloop_calc/dmrg_results/optket_variance"][()]
+                )
+                loop_initial_ket_energy = float(
+                    preloop["/second_preloop_calc/dmrg_results/initial_ket_energy"][()]
+                )
+                loop_v_score_numerator = float(
+                    preloop["/second_preloop_calc/dmrg_results/v_score_numerator"][()]
+                )
+                loop_deviation_hf = float(
+                    preloop["/second_preloop_calc/dmrg_results/deviation_hf"][()]
+                )
+                loop_deviation_init_ket = float(
+                    preloop["/second_preloop_calc/dmrg_results/deviation_init_ket"][()]
+                )
+                loop_h_min_e_optket_norm = float(
+                    preloop["/second_preloop_calc/dmrg_results/h_min_e_optket_norm"][()]
+                )
+                loop_hf_energy = float(
+                    preloop["/second_preloop_calc/dmrg_results/hf_energy"][()]
+                )
+            # loop_single_qchem_dmrg_calc_wall_time_s = float(preloop["/second_preloop_calc/dmrg_results/wall_single_qchem_dmrg_calc_time_s"][()])
 
             sweep_energies = preloop["sweep_energies"][()].ravel()
             if "reordering_method_used" in preloop:
@@ -311,6 +391,24 @@ def get_data_from_incomplete_processing(data_file):
             extra_dict["loop_reorder_integrals_wall_time_s_list"].append(
                 loop_reorder_integrals_wall_time_s
             )
+            if "/second_preloop_calc/dmrg_results/v_score_hartree_fock" in preloop:
+                extra_dict["loop_bd1_vscore_list"].append(loop_bd1_vscore)
+                extra_dict["loop_initial_state_vscore_list"].append(
+                    loop_initial_state_vscore
+                )
+                extra_dict["loop_optket_variance_list"].append(loop_optket_variance)
+                extra_dict["loop_initial_ket_energy_list"].append(
+                    loop_initial_ket_energy
+                )
+                extra_dict["loop_v_score_numerator_list"].append(loop_v_score_numerator)
+                extra_dict["loop_deviation_hf_list"].append(loop_deviation_hf)
+                extra_dict["loop_deviation_init_ket_list"].append(
+                    loop_deviation_init_ket
+                )
+                extra_dict["loop_h_min_e_optket_norm_list"].append(
+                    loop_h_min_e_optket_norm
+                )
+                extra_dict["loop_hf_energy_list"].append(loop_hf_energy)
 
         # Load for main loop calculations
         for i in range(1, 1000):
@@ -327,71 +425,54 @@ def get_data_from_incomplete_processing(data_file):
             loop_cpu_time_s = float(loop["cpu_single_qchem_dmrg_calc_time_s"][()])
             loop_wall_time_s = float(loop["wall_single_qchem_dmrg_calc_time_s"][()])
 
-            loop_copy_mps_cpu_time_s = float(
-                preloop["/first_preloop_calc/dmrg_results/cpu_copy_mps_time_s"][()]
-            )
+            loop_copy_mps_cpu_time_s = float(loop["cpu_copy_mps_time_s"][()])
             loop_dmrg_optimization_cpu_time_s = float(
-                preloop[
-                    "/first_preloop_calc/dmrg_results/cpu_dmrg_optimization_time_s"
-                ][()]
+                loop["cpu_dmrg_optimization_time_s"][()]
             )
             loop_driver_initialize_system_cpu_time_s = float(
-                preloop[
-                    "/first_preloop_calc/dmrg_results/cpu_driver_initialize_system_time_s"
-                ][()]
+                loop["cpu_driver_initialize_system_time_s"][()]
             )
             loop_generate_initial_mps_cpu_time_s = float(
-                preloop[
-                    "/first_preloop_calc/dmrg_results/cpu_generate_initial_mps_time_s"
-                ][()]
+                loop["cpu_generate_initial_mps_time_s"][()]
             )
             loop_get_qchem_hami_mpo_cpu_time_s = float(
-                preloop[
-                    "/first_preloop_calc/dmrg_results/cpu_get_qchem_hami_mpo_time_s"
-                ][()]
+                loop["cpu_get_qchem_hami_mpo_time_s"][()]
             )
-            loop_make_driver_cpu_time_s = float(
-                preloop["/first_preloop_calc/dmrg_results/cpu_make_driver_time_s"][()]
-            )
+            loop_make_driver_cpu_time_s = float(loop["cpu_make_driver_time_s"][()])
             loop_reorder_integrals_cpu_time_s = float(
-                preloop[
-                    "/first_preloop_calc/dmrg_results/cpu_reorder_integrals_time_s"
-                ][()]
+                loop["cpu_reorder_integrals_time_s"][()]
             )
-            # loop__cpu_time_s = float(preloop["/first_preloop_calc/dmrg_results/cpu_single_qchem_dmrg_calc_time_s"][()])
+            # loop__cpu_time_s = float(loop["cpu_single_qchem_dmrg_calc_time_s"][()])
 
-            loop_copy_mps_wall_time_s = float(
-                preloop["/first_preloop_calc/dmrg_results/wall_copy_mps_time_s"][()]
-            )
+            loop_copy_mps_wall_time_s = float(loop["wall_copy_mps_time_s"][()])
             loop_dmrg_optimization_wall_time_s = float(
-                preloop[
-                    "/first_preloop_calc/dmrg_results/wall_dmrg_optimization_time_s"
-                ][()]
+                loop["wall_dmrg_optimization_time_s"][()]
             )
             loop_driver_initialize_system_wall_time_s = float(
-                preloop[
-                    "/first_preloop_calc/dmrg_results/wall_driver_initialize_system_time_s"
-                ][()]
+                loop["wall_driver_initialize_system_time_s"][()]
             )
             loop_generate_initial_mps_wall_time_s = float(
-                preloop[
-                    "/first_preloop_calc/dmrg_results/wall_generate_initial_mps_time_s"
-                ][()]
+                loop["wall_generate_initial_mps_time_s"][()]
             )
             loop_get_qchem_hami_mpo_wall_time_s = float(
-                preloop[
-                    "/first_preloop_calc/dmrg_results/wall_get_qchem_hami_mpo_time_s"
-                ][()]
+                loop["wall_get_qchem_hami_mpo_time_s"][()]
             )
-            loop_make_driver_wall_time_s = float(
-                preloop["/first_preloop_calc/dmrg_results/wall_make_driver_time_s"][()]
-            )
+            loop_make_driver_wall_time_s = float(loop["wall_make_driver_time_s"][()])
             loop_reorder_integrals_wall_time_s = float(
-                preloop[
-                    "/first_preloop_calc/dmrg_results/wall_reorder_integrals_time_s"
-                ][()]
+                loop["wall_reorder_integrals_time_s"][()]
             )
-            # loop_single_qchem_dmrg_calc_wall_time_s = float(preloop["/first_preloop_calc/dmrg_results/wall_single_qchem_dmrg_calc_time_s"][()])
+            if "v_score_hartree_fock" in loop:
+                loop_bd1_vscore = float(loop["v_score_hartree_fock"][()])
+                loop_initial_state_vscore = float(loop["v_score_init_ket"][()])
+                loop_optket_variance = float(loop["optket_variance"][()])
+                loop_initial_ket_energy = float(loop["initial_ket_energy"][()])
+                loop_v_score_numerator = float(loop["v_score_numerator"][()])
+                loop_deviation_hf = float(loop["deviation_hf"][()])
+                loop_deviation_init_ket = float(loop["deviation_init_ket"][()])
+                loop_h_min_e_optket_norm = float(loop["h_min_e_optket_norm"][()])
+                loop_hf_energy = float(loop["hf_energy"][()])
+
+            # loop_single_qchem_dmrg_calc_wall_time_s = float(loop["wall_single_qchem_dmrg_calc_time_s"][()])
 
             sweep_energies = loop["sweep_energies"][()].ravel()
             if "reordering_method_used" in loop:
@@ -457,6 +538,24 @@ def get_data_from_incomplete_processing(data_file):
             extra_dict["loop_reorder_integrals_wall_time_s_list"].append(
                 loop_reorder_integrals_wall_time_s
             )
+            if "v_score_hartree_fock" in loop:
+                extra_dict["loop_bd1_vscore_list"].append(loop_bd1_vscore)
+                extra_dict["loop_initial_state_vscore_list"].append(
+                    loop_initial_state_vscore
+                )
+                extra_dict["loop_optket_variance_list"].append(loop_optket_variance)
+                extra_dict["loop_initial_ket_energy_list"].append(
+                    loop_initial_ket_energy
+                )
+                extra_dict["loop_v_score_numerator_list"].append(loop_v_score_numerator)
+                extra_dict["loop_deviation_hf_list"].append(loop_deviation_hf)
+                extra_dict["loop_deviation_init_ket_list"].append(
+                    loop_deviation_init_ket
+                )
+                extra_dict["loop_h_min_e_optket_norm_list"].append(
+                    loop_h_min_e_optket_norm
+                )
+                extra_dict["loop_hf_energy_list"].append(loop_hf_energy)
 
         if "final_dmrg_results" in file_obj:
             print("Processed results available")
@@ -584,6 +683,7 @@ def add_dmrg_processing_basic(
     reordering_method_wall_times_s,
     data_dict,
     calc_uuid=None,
+    extra_dict=None,
 ):
     # Get worksheet name from fcidump name
     # take after . and before {
@@ -643,6 +743,10 @@ def add_dmrg_processing_basic(
         "AC": "CPU Time Reordering Method (s)",
         "AD": "Wall Time Reordering Method (s)",
     }
+    if extra_dict is not None:
+        if "loop_bd1_vscore_list" in extra_dict:
+            data_header_dict["AE"] = "BD1 V Score"
+            data_header_dict["AF"] = "Initial State V Score"
     ws.append(data_header_dict)
 
     # Fill loop column
@@ -730,6 +834,20 @@ def add_dmrg_processing_basic(
     for i, wall_time in enumerate(reordering_method_wall_times_s):
         ws[f"AD{7+i}"] = wall_time
         ws[f"AD{7+i}"].number_format = "0.00"
+
+    if extra_dict is not None:
+        if "loop_bd1_vscore_list" in extra_dict:
+            # Fill BD1 V Score column
+            for i, bd1_vscore in enumerate(extra_dict["loop_bd1_vscore_list"]):
+                ws[f"AE{7+i}"] = bd1_vscore
+                ws[f"AE{7+i}"].number_format = "0.000E+00"
+
+            # Fill Initial State V Score column
+            for i, initial_state_vscore in enumerate(
+                extra_dict["loop_initial_state_vscore_list"]
+            ):
+                ws[f"AF{7+i}"] = initial_state_vscore
+                ws[f"AF{7+i}"].number_format = "0.000E+00"
 
     last_data_row = 7 + len(dmrg_energies) - 1
     # E_DMRG formula
@@ -919,6 +1037,7 @@ def setup_workbook(
     bd_extrapolation_dict=None,
     memory_summary_csv_filename="./memory_summary.csv",
     csv_uuid=False,
+    sweeps_for_normalization=20,
 ):
     for data_dict in data_dict_list:
         # If data_file_path is a list of paths, try each path until one is found where the file exists
@@ -976,6 +1095,7 @@ def setup_workbook(
         data_dict["Wall Time at Max Bond Dimension (hr)"] = (
             loop_wall_times_s[bd_max_arg] / 3600
         )
+        data_dict["num_sweeps_at_max_bd"] = num_sweeps_list[bd_max_arg]
 
         if "Calc UUID Small BD" in data_dict:
             data_file_small_bd = (
@@ -1045,6 +1165,7 @@ def setup_workbook(
             reordering_method_wall_times_s=reordering_method_wall_times_s,
             data_dict=data_dict,
             calc_uuid=data_dict["Calc UUID"][:4],
+            extra_dict=extra_dict,
         )
 
         # Save performance metrics to csv
@@ -1066,7 +1187,28 @@ def setup_workbook(
             ]
         )
         csv_data_array = csv_data_array.T
-        header = "DMRG Energy, Bond Dimension, Discarded Weights, CPU Time (s), Wall Time (s)"
+        header = (
+            "DMRG Energy,Bond Dimension,Discarded Weights,CPU Time (s),Wall Time (s)"
+        )
+
+        if extra_dict is not None:
+            if "loop_bd1_vscore_list" in extra_dict:
+                if len(extra_dict["loop_bd1_vscore_list"]) == len(dmrg_energies):
+                    csv_data_array = np.vstack(
+                        [
+                            csv_data_array.T,
+                            extra_dict["loop_bd1_vscore_list"],
+                            extra_dict["loop_initial_state_vscore_list"],
+                            extra_dict["loop_optket_variance_list"],
+                            extra_dict["loop_initial_ket_energy_list"],
+                            extra_dict["loop_v_score_numerator_list"],
+                            extra_dict["loop_deviation_hf_list"],
+                            extra_dict["loop_deviation_init_ket_list"],
+                            extra_dict["loop_h_min_e_optket_norm_list"],
+                            extra_dict["loop_hf_energy_list"],
+                        ]
+                    ).T
+                    header += ",BD1 V Score,Initial State V Score,Optket Variance,Initial Ket Energy,V Score Numerator,Deviation HF,Deviation Init Ket,H Min E Optket Norm,HF Energy"
         np.savetxt(
             csv_storage_path / csv_filename,
             csv_data_array,
@@ -1088,7 +1230,7 @@ def setup_workbook(
     #     "UUID": "54e97bd0-e822-41cc-9c8f-d166194df2b5",
     # },
     if bd_extrapolation_dict is not None:
-        extrapolation_df = pd.DataFrame.from_dict(bd_extrapolation_dict, orient='index')
+        extrapolation_df = pd.DataFrame.from_dict(bd_extrapolation_dict, orient="index")
         print(extrapolation_df)
         print(extrapolation_df.columns)
         # energy_series = extrapolation_df["energy"]
@@ -1114,9 +1256,18 @@ def setup_workbook(
         data_dict_list_df = data_dict_list_df.rename(columns={"index": "fcidump"})
 
         if "total_CPU Time at Max Bond Dimension (hr)" in data_dict_list_df:
-            data_dict_list_df["CPU Time at Max Bond Dimension (hr)"] = data_dict_list_df[
-                "total_CPU Time at Max Bond Dimension (hr)"
-            ]
+            # data_dict_list_df["CPU Time at Max Bond Dimension (hr)"] = (
+            #     data_dict_list_df["total_CPU Time at Max Bond Dimension (hr)"]
+            # )
+
+            # Do the above replacement, but only if the total_CPU Time at Max Bond Dimension (hr) is not NaN
+            data_dict_list_df["CPU Time at Max Bond Dimension (hr)"] = np.where(
+                data_dict_list_df["total_CPU Time at Max Bond Dimension (hr)"].isna(),
+                data_dict_list_df["CPU Time at Max Bond Dimension (hr)"],
+                data_dict_list_df["total_CPU Time at Max Bond Dimension (hr)"],
+            )
+            data_dict_list_df["total_CPU Time at Max Bond Dimension (hr)"] = data_dict_list_df["CPU Time at Max Bond Dimension (hr)"]
+            
 
         # Use quadratic scaling for the RSS memory usage for extapolated BD, and for CPU and Wall time (cubic)
         data_dict_list_df["RSS Memory Usage (GiB) Extrapolated"] = data_dict_list_df[
@@ -1146,13 +1297,220 @@ def setup_workbook(
         )
 
         if "Sweep Normalized CPU Time at Max Bond Dimension (hr)" in data_dict_list_df:
+            # For any data that does not already sweep normalized CPU time, calculate it
+            data_dict_list_df[
+                    "Sweep Normalized CPU Time at Max Bond Dimension (hr)"
+                ] = np.where(
+                data_dict_list_df[
+                    "Sweep Normalized CPU Time at Max Bond Dimension (hr)"
+                ].isna(),
+                data_dict_list_df["CPU Time at Max Bond Dimension (hr)"]
+                / data_dict_list_df["num_sweeps_at_max_bd"]
+                * sweeps_for_normalization,
+                data_dict_list_df[
+                    "Sweep Normalized CPU Time at Max Bond Dimension (hr)"
+                ],
+            )
+
             data_dict_list_df[
                 "Sweep Normalized CPU Time at Max Bond Dimension (hr) Extrapolated"
-            ] = data_dict_list_df["Sweep Normalized CPU Time at Max Bond Dimension (hr)"] * (
+            ] = data_dict_list_df[
+                "Sweep Normalized CPU Time at Max Bond Dimension (hr)"
+            ] * (
                 data_dict_list_df["extrapolated_bond_dimension"] ** 3
                 / data_dict_list_df["Max Bond Dimension"] ** 3
             )
 
+        # Do the above for the upper and lower bounds on the BD extrapolation
+
+        data_dict_list_df["RSS Memory Usage (GiB) Extrapolated Lower Bound"] = (
+            data_dict_list_df["RSS Memory Usage (GiB)"]
+            * (
+                data_dict_list_df["extrapolated_bond_dimension_lower_bound"]
+                / data_dict_list_df["Max Bond Dimension"]
+            )
+            ** 2
+        )
+
+        data_dict_list_df["RSS Memory Usage (GiB) Extrapolated Upper Bound"] = (
+            data_dict_list_df["RSS Memory Usage (GiB)"]
+            * (
+                data_dict_list_df["extrapolated_bond_dimension_upper_bound"]
+                / data_dict_list_df["Max Bond Dimension"]
+            )
+            ** 2
+        )
+
+        data_dict_list_df[
+            "CPU Time at Max Bond Dimension (hr) Extrapolated Lower Bound"
+        ] = (
+            data_dict_list_df["CPU Time at Max Bond Dimension (hr)"]
+            * (
+                data_dict_list_df["extrapolated_bond_dimension_lower_bound"]
+                / data_dict_list_df["Max Bond Dimension"]
+            )
+            ** 3
+        )
+
+        data_dict_list_df[
+            "CPU Time at Max Bond Dimension (hr) Extrapolated Upper Bound"
+        ] = (
+            data_dict_list_df["CPU Time at Max Bond Dimension (hr)"]
+            * (
+                data_dict_list_df["extrapolated_bond_dimension_upper_bound"]
+                / data_dict_list_df["Max Bond Dimension"]
+            )
+            ** 3
+        )
+
+        data_dict_list_df[
+            "Wall Time at Max Bond Dimension (hr) Extrapolated Lower Bound"
+        ] = (
+            data_dict_list_df["Wall Time at Max Bond Dimension (hr)"]
+            * (
+                data_dict_list_df["extrapolated_bond_dimension_lower_bound"]
+                / data_dict_list_df["Max Bond Dimension"]
+            )
+            ** 3
+        )
+
+        data_dict_list_df[
+            "Wall Time at Max Bond Dimension (hr) Extrapolated Upper Bound"
+        ] = (
+            data_dict_list_df["Wall Time at Max Bond Dimension (hr)"]
+            * (
+                data_dict_list_df["extrapolated_bond_dimension_upper_bound"]
+                / data_dict_list_df["Max Bond Dimension"]
+            )
+            ** 3
+        )
+
+        data_dict_list_df["RSS Memory Usage (GiB) Chem Accuracy Lower Bound"] = np.max(
+            [
+                data_dict_list_df["RSS Memory Usage (GiB) Extrapolated Lower Bound"],
+                data_dict_list_df["RSS Memory Usage (GiB)"],
+            ],
+            axis=0,
+        )
+
+        data_dict_list_df[
+            "RSS Memory Usage (GiB) Chem Accuracy Extrapolated Upper Bound"
+        ] = np.max(
+            [
+                data_dict_list_df["RSS Memory Usage (GiB) Extrapolated Upper Bound"],
+                data_dict_list_df["RSS Memory Usage (GiB)"],
+            ],
+            axis=0,
+        )
+
+        
+
+        # Assert that values have correct relative relationships
+        # If not, show the values that are incorrect and where the error is
+        # Force all rows to be printed
+        pd.set_option("display.max_rows", None)
+        pd.set_option("display.max_columns", None)
+        # print(data_dict_list_df["RSS Memory Usage (GiB) Extrapolated Lower Bound"])
+        # print(data_dict_list_df["RSS Memory Usage (GiB) Extrapolated"])
+        print(data_dict_list_df)
+        print(data_dict_list_df.columns)
+        #Remove rows with NaN values
+        data_dict_list_df = data_dict_list_df.dropna()
+
+        assert np.all(
+            data_dict_list_df["RSS Memory Usage (GiB) Extrapolated Lower Bound"]
+            <= data_dict_list_df["RSS Memory Usage (GiB) Extrapolated"] + 1E-3
+        ), f"RSS Memory Usage (GiB) Extrapolated Lower Bound not less than RSS Memory Usage (GiB) Extrapolated: {data_dict_list_df['RSS Memory Usage (GiB) Extrapolated Lower Bound'] <= data_dict_list_df['RSS Memory Usage (GiB) Extrapolated']}"
+
+
+        assert np.all(
+            data_dict_list_df["RSS Memory Usage (GiB) Extrapolated"]
+            <= data_dict_list_df["RSS Memory Usage (GiB) Extrapolated Upper Bound"] + 1E-3
+        )
+
+        assert np.all(
+            data_dict_list_df["RSS Memory Usage (GiB)"]
+            <= data_dict_list_df[
+                "RSS Memory Usage (GiB) Chem Accuracy Extrapolated Upper Bound"
+            ] + 1E-3
+        )
+        assert np.all(
+            data_dict_list_df["RSS Memory Usage (GiB) Chem Accuracy"]
+            <= data_dict_list_df[
+                "RSS Memory Usage (GiB) Chem Accuracy Extrapolated Upper Bound"
+            ] + 1E-3
+        )
+
+        assert np.all(
+            data_dict_list_df[
+                "CPU Time at Max Bond Dimension (hr) Extrapolated Lower Bound"
+            ]
+            <= data_dict_list_df["CPU Time at Max Bond Dimension (hr) Extrapolated"] + 1E-3
+        )
+        assert np.all(
+            data_dict_list_df["CPU Time at Max Bond Dimension (hr) Extrapolated"]
+            <= data_dict_list_df[
+                "CPU Time at Max Bond Dimension (hr) Extrapolated Upper Bound"
+            ] + 1E-3
+        )
+
+        assert np.all(
+            data_dict_list_df[
+                "Wall Time at Max Bond Dimension (hr) Extrapolated Lower Bound"
+            ]
+            <= data_dict_list_df["Wall Time at Max Bond Dimension (hr) Extrapolated"] + 1E-3
+        )
+        assert np.all(
+            data_dict_list_df["Wall Time at Max Bond Dimension (hr) Extrapolated"]
+            <= data_dict_list_df[
+                "Wall Time at Max Bond Dimension (hr) Extrapolated Upper Bound"
+            ] + 1E-3
+        )
+
+        if "Sweep Normalized CPU Time at Max Bond Dimension (hr)" in data_dict_list_df:
+            data_dict_list_df[
+                "Sweep Normalized CPU Time at Max Bond Dimension (hr) Extrapolated Lower Bound"
+            ] = (
+                data_dict_list_df[
+                    "Sweep Normalized CPU Time at Max Bond Dimension (hr)"
+                ]
+                * (
+                    data_dict_list_df["extrapolated_bond_dimension_lower_bound"]
+                    / data_dict_list_df["Max Bond Dimension"]
+                )
+                ** 3
+            )
+
+            data_dict_list_df[
+                "Sweep Normalized CPU Time at Max Bond Dimension (hr) Extrapolated Upper Bound"
+            ] = (
+                data_dict_list_df[
+                    "Sweep Normalized CPU Time at Max Bond Dimension (hr)"
+                ]
+                * (
+                    data_dict_list_df["extrapolated_bond_dimension_upper_bound"]
+                    / data_dict_list_df["Max Bond Dimension"]
+                )
+                ** 3
+            )
+
+            assert np.all(
+                data_dict_list_df[
+                    "Sweep Normalized CPU Time at Max Bond Dimension (hr) Extrapolated Lower Bound"
+                ]
+                <= data_dict_list_df[
+                    "Sweep Normalized CPU Time at Max Bond Dimension (hr) Extrapolated"
+                ] + 1E-3
+            )
+
+            assert np.all(
+                data_dict_list_df[
+                    "Sweep Normalized CPU Time at Max Bond Dimension (hr) Extrapolated"
+                ]
+                <= data_dict_list_df[
+                    "Sweep Normalized CPU Time at Max Bond Dimension (hr) Extrapolated Upper Bound"
+                ] + 1E-3
+            )
 
         data_dict_list_df.to_csv(memory_summary_csv_filename, index=False)
 
