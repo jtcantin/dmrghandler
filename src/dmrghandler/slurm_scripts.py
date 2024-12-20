@@ -24,7 +24,7 @@ def gen_single_node_job_script(submit_dict, submit_script_file_name):
 
     submit_script_string = f"""#!/bin/bash
 #SBATCH --account={account_name}
-#SBATCH --nodes=1
+#SBATCH --nodes=2
 #SBATCH --time={time_cap_string}
 #SBATCH --job-name={job_name}
 #SBATCH --mail-user={email}
@@ -84,14 +84,8 @@ set -eE -o functrace
 trap 'your_cleanup_function' USR1
 
 #Import Modules
-# module load CCEnv
-# module load StdEnv
-# module load gcc/10
-# module load boost cmake libffi fmt 
-# module load rust
-module load python/3.9
-# module load intel/2021.2.0
-# module load hdf5/1.10.7
+module load python/3.9.8
+module load gcc/8.3.0 openmpi/4.1.4
 
 #Activate python environment
 source $SCRATCH/{python_environment_location}/bin/activate
