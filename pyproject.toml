@@ -8,7 +8,6 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = ">=3.9"
-block2 = "0.5.3rc16"
 pyscf = "^2.6.2"
 matplotlib = "^3.9.0"
 pandas = "^2.2.2"
@@ -18,11 +17,12 @@ notebook = "^7.2.1"
 openpyxl = "^3.1.5"
 memory-profiler = "^0.61.0"
 ipympl = "^0.9.4"
+block2-mpi = "0.5.3rc19"
 
 [tool.poetry.dev-dependencies]
 
 [[tool.poetry.source]]
-name = "block2_rc"
+name = "block2-mpi"
 url = "https://block-hczhai.github.io/block2-preview/pypi/"
 priority = "supplemental"
 

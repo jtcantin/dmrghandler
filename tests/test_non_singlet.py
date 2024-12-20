@@ -129,7 +129,7 @@ class TestNonSinglet(unittest.TestCase):
             data_config = config_dict["data_config"]
             python_run_file_name = data_config["python_run_file"]
             os.environ["SCRATCH"] = str(scratch_sim_path_absolute)
-            os.system(f"env_dmrghandler/bin/python {python_run_file_name}")
+            os.system(f"mpirun -np 1 env_dmrghandler/bin/python {python_run_file_name}")
             log.debug("DMRG NOW EXITED")
             # Get results
             main_storage_folder_path = data_config["main_storage_folder_path"]
@@ -242,7 +242,7 @@ class TestNonSinglet(unittest.TestCase):
             data_config = config_dict["data_config"]
             python_run_file_name = data_config["python_run_file"]
             os.environ["SCRATCH"] = str(scratch_sim_path_absolute)
-            os.system(f"env_dmrghandler/bin/python {python_run_file_name}")
+            os.system(f"mpirun -np 1 env_dmrghandler/bin/python {python_run_file_name}")
             log.debug("DMRG NOW EXITED")
             # Get results
             main_storage_folder_path = data_config["main_storage_folder_path"]

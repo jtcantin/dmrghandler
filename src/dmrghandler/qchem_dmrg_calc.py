@@ -197,10 +197,11 @@ def single_qchem_dmrg_calc(
         n_threads=num_threads,
         # n_mkl_threads=n_mkl_threads,  # Default value is 1
         symm_type=symmetry_type,
-        mpi=None,  # Default value
+        mpi=True,  # Default value
         stack_mem_ratio=stack_mem_ratio,  # Default value 0.4
         fp_codec_cutoff=1e-16,  # Default value 1e-16
     )
+    log.debug(f"num MPI: {driver.mpi.size}")
     log.debug(f"recorded stack_mem_ratio: {driver.stack_mem_ratio}")
     log.debug(f"recorded stack_mem: {driver.stack_mem}")
     wall_make_driver_end_time_ns = time.perf_counter_ns()

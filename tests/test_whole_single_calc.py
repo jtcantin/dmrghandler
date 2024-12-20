@@ -114,8 +114,8 @@ class TestDmrgWholeSingleCalc(unittest.TestCase):
             "factor_half_convention_list": [True],
             # "symmetry_type_list": ["SZ", "SZ", "SU(2)", "SU(2)"],
             "symmetry_type_list": ["SU(2)"],
-            "num_threads_list": [1],
-            "n_mkl_threads_list": [1],
+            "num_threads_list": [2],
+            "n_mkl_threads_list": [2],
             "track_mem": [True],
         }
 

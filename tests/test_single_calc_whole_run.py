@@ -93,7 +93,7 @@ class TestSingleCalcWholeRun(unittest.TestCase):
             "factor_half_convention_list": [True],
             # "symmetry_type_list": ["SZ", "SZ", "SU(2)", "SU(2)"],
             "symmetry_type_list": ["SU(2)"],
-            "num_threads_list": [4],
+            "num_threads_list": [1],
             "n_mkl_threads_list": [1],
             "track_mem": [False],
         }
@@ -146,7 +146,7 @@ class TestSingleCalcWholeRun(unittest.TestCase):
             data_config = config_dict["data_config"]
             python_run_file_name = data_config["python_run_file"]
             os.environ["SCRATCH"] = str(scratch_sim_path_absolute)
-            os.system(f"env_dmrghandler/bin/python {python_run_file_name}")
+            os.system(f"mpirun -np 1 env_dmrghandler/bin/python {python_run_file_name}")
             log.debug("DMRG NOW EXITED")
             # Get results
             main_storage_folder_path = data_config["main_storage_folder_path"]
@@ -261,7 +261,7 @@ class TestSingleCalcWholeRun(unittest.TestCase):
             data_config = config_dict["data_config"]
             python_run_file_name = data_config["python_run_file"]
             os.environ["SCRATCH"] = str(scratch_sim_path_absolute)
-            os.system(f"env_dmrghandler/bin/python {python_run_file_name}")
+            os.system(f"mpirun -np 1 env_dmrghandler/bin/python {python_run_file_name}")
             log.debug("DMRG NOW EXITED")
             # Get results
             main_storage_folder_path = data_config["main_storage_folder_path"]
@@ -376,7 +376,7 @@ class TestSingleCalcWholeRun(unittest.TestCase):
             data_config = config_dict["data_config"]
             python_run_file_name = data_config["python_run_file"]
             os.environ["SCRATCH"] = str(scratch_sim_path_absolute)
-            os.system(f"env_dmrghandler/bin/python {python_run_file_name}")
+            os.system(f"mpirun -np 1 env_dmrghandler/bin/python {python_run_file_name}")
             log.debug("DMRG NOW EXITED")
             # Get results
             main_storage_folder_path = data_config["main_storage_folder_path"]
@@ -492,7 +492,7 @@ class TestSingleCalcWholeRun(unittest.TestCase):
             data_config = config_dict["data_config"]
             python_run_file_name = data_config["python_run_file"]
             os.environ["SCRATCH"] = str(scratch_sim_path_absolute)
-            os.system(f"env_dmrghandler/bin/python {python_run_file_name}")
+            os.system(f"mpirun -np 1 env_dmrghandler/bin/python {python_run_file_name}")
             log.debug("DMRG NOW EXITED")
             # Get results
             main_storage_folder_path = data_config["main_storage_folder_path"]
@@ -607,7 +607,7 @@ class TestSingleCalcWholeRun(unittest.TestCase):
             data_config = config_dict["data_config"]
             python_run_file_name = data_config["python_run_file"]
             os.environ["SCRATCH"] = str(scratch_sim_path_absolute)
-            os.system(f"env_dmrghandler/bin/python {python_run_file_name}")
+            os.system(f"mpirun -np 1 env_dmrghandler/bin/python {python_run_file_name}")
             log.debug("DMRG NOW EXITED")
             # Get results
             main_storage_folder_path = data_config["main_storage_folder_path"]
@@ -722,7 +722,7 @@ class TestSingleCalcWholeRun(unittest.TestCase):
             data_config = config_dict["data_config"]
             python_run_file_name = data_config["python_run_file"]
             os.environ["SCRATCH"] = str(scratch_sim_path_absolute)
-            os.system(f"env_dmrghandler/bin/python {python_run_file_name}")
+            os.system(f"mpirun -np 1 env_dmrghandler/bin/python {python_run_file_name}")
             log.debug("DMRG NOW EXITED")
             # Get results
             main_storage_folder_path = data_config["main_storage_folder_path"]
@@ -958,7 +958,7 @@ class TestSingleCalcWholeRun(unittest.TestCase):
             data_config = config_dict["data_config"]
             python_run_file_name = data_config["python_run_file"]
             os.environ["SCRATCH"] = str(scratch_sim_path_absolute)
-            os.system(f"env_dmrghandler/bin/python {python_run_file_name}")
+            os.system(f"mpirun -np 1 env_dmrghandler/bin/python {python_run_file_name}")
             log.debug("DMRG NOW EXITED")
             # # Get results
             # main_storage_folder_path = data_config["main_storage_folder_path"]
@@ -1138,7 +1138,7 @@ class TestSingleCalcWholeRun(unittest.TestCase):
             data_config = config_dict["data_config"]
             python_run_file_name = data_config["python_run_file"]
             os.environ["SCRATCH"] = str(scratch_sim_path_absolute)
-            os.system(f"env_dmrghandler/bin/python {python_run_file_name}")
+            os.system(f"mpirun -np 1 env_dmrghandler/bin/python {python_run_file_name}")
             log.debug("DMRG NOW EXITED")
             # Get results
             main_storage_folder_path = data_config["main_storage_folder_path"]
@@ -1254,7 +1254,7 @@ class TestSingleCalcWholeRun(unittest.TestCase):
             data_config = config_dict["data_config"]
             python_run_file_name = data_config["python_run_file"]
             os.environ["SCRATCH"] = str(scratch_sim_path_absolute)
-            os.system(f"env_dmrghandler/bin/python {python_run_file_name}")
+            os.system(f"mpirun -np 1 env_dmrghandler/bin/python {python_run_file_name}")
             log.debug("DMRG NOW EXITED")
             # Get results
             main_storage_folder_path = data_config["main_storage_folder_path"]
@@ -1411,7 +1411,7 @@ class TestSingleCalcWholeRun(unittest.TestCase):
             data_config = config_dict["data_config"]
             python_run_file_name = data_config["python_run_file"]
             os.environ["SCRATCH"] = str(scratch_sim_path_absolute)
-            os.system(f"env_dmrghandler/bin/python {python_run_file_name}")
+            os.system(f"mpirun -np 1 env_dmrghandler/bin/python {python_run_file_name}")
             log.debug("DMRG NOW EXITED")
             # Get results
             main_storage_folder_path = data_config["main_storage_folder_path"]
@@ -1624,7 +1624,7 @@ class TestSingleCalcWholeRun(unittest.TestCase):
             data_config = config_dict["data_config"]
             python_run_file_name = data_config["python_run_file"]
             os.environ["SCRATCH"] = str(scratch_sim_path_absolute)
-            os.system(f"env_dmrghandler/bin/python {python_run_file_name}")
+            os.system(f"mpirun -np 1 env_dmrghandler/bin/python {python_run_file_name}")
             log.debug("DMRG NOW EXITED")
             # Get results
             main_storage_folder_path = data_config["main_storage_folder_path"]
