@@ -160,7 +160,7 @@ echo 'Single run of DMRG calculations beginning'
 echo ' '
 free -kt
 cat /proc/meminfo
-python {python_run_file} &
+srun python {python_run_file} &
 wait
 echo ' '
 echo 'Single run of DMRG calculations done'
