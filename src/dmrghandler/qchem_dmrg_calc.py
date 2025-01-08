@@ -21,6 +21,7 @@ default_sweep_schedule_bond_dims = [default_final_bond_dim] * 4 + [
 ] * 4
 default_sweep_schedule_noise = [1e-4] * 4 + [1e-5] * 4 + [0]
 default_sweep_schedule_davidson_threshold = [1e-10] * 8
+CSF_COEFF_THRESHOLD_DEFAULT = 1e-5
 
 
 def single_qchem_dmrg_calc_mem_tracking(*args, track_mem=False, **kwargs):
@@ -118,6 +119,11 @@ def single_qchem_dmrg_calc(
         calc_v_score_bool = dmrg_parameters["calc_v_score_bool"]
     else:
         calc_v_score_bool = False
+
+    if "csf_coeff_threshold" in dmrg_parameters.keys():
+        csf_coeff_threshold = dmrg_parameters["csf_coeff_threshold"]
+    else:
+        csf_coeff_threshold = CSF_COEFF_THRESHOLD_DEFAULT
 
     print_system_info(
         f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
@@ -600,6 +606,24 @@ def single_qchem_dmrg_calc(
         f"{os.path.basename(__file__)} - LINE {inspect.getframeinfo(inspect.currentframe()).lineno}"
     )
 
+    # Obtaining overlaps based on code by Alex Kunitsa: https://github.com/isi-usc-edu/qb-gsee-benchmark/blob/5449de07c12974b0ea6ee7409b9528d9edecbb33/src/qb_gsee_benchmark/dmrg_utils.py#L10
+    csf_definitions, csf_coefficients = driver.get_csf_coefficients(
+        ket_optimized,
+        cutoff=csf_coeff_threshold,
+        given_dets=None,
+        max_print=20,
+        fci_conv=False,
+        # max_excite=None,
+        # ref_det=None,
+        iprint=verbosity,
+    ) 
+    # csf_definitions: 2D array  of shape (n_dets, n_sites); for value meanings, see https://block2.readthedocs.io/en/latest/api/pyblock2.html#pyblock2.driver.core.DMRGDriver.get_csf_coefficients
+    # csf_coefficients: 1D array of length n_dets
+
+    abs_coeffs = np.abs(csf_coefficients)
+    largest_csf_coefficient = csf_coefficients[np.argmax(abs_coeffs)]
+    largest_csf = csf_definitions[np.argmax(abs_coeffs),:]
+
     dmrg_discarded_weight = sweep_max_discarded_weight[-1]
     dmrg_results_dict = {
         "dmrg_driver": driver,
@@ -635,6 +659,13 @@ def single_qchem_dmrg_calc(
         "reordering_indices_used": reordering_indices,
         "reordering_method_used": reordering_method,
         "initial_ket_energy": initial_ket_energy,
+        "csf_coefficients_real_part": np.real(csf_coefficients),
+        "csf_coefficients_imag_part": np.imag(csf_coefficients),
+        "csf_definitions": csf_definitions,
+        "csf_coeff_threshold": csf_coeff_threshold,
+        "largest_csf_coefficient_real_part": np.real(largest_csf_coefficient),
+        "largest_csf_coefficient_imag_part": np.imag(largest_csf_coefficient),
+        "largest_csf": largest_csf,
     }
 
     if reorder_output_dict is not None:

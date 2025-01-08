@@ -334,6 +334,11 @@ def gen_config_files(
             # "core_energy",
         }
 
+        if "csf_coeff_threshold_list" in config_dict:
+            dmrg_basic_config["csf_coeff_threshold"] = common_or_list(
+                config_dict["csf_coeff_threshold_list"], data_iter
+            )
+
         if "sweep_start_list" in dmrg_advanced_config:
             dmrg_advanced_config["sweep_start"] = common_or_list(
                 dmrg_advanced_config["sweep_start_list"], data_iter
