@@ -63,6 +63,7 @@ def prepare_calc(config_file_name):
     dmrg_parameters["two_Sz"] = two_Sz
     dmrg_parameters["orb_sym"] = orb_sym
     dmrg_parameters["core_energy"] = nuc_rep_energy
+    dmrg_parameters["original_data_file_path"] = data_file_path
 
     config_io.ensure_required_in_dict(
         dictionary=dmrg_parameters,
@@ -101,6 +102,7 @@ def prepare_calc(config_file_name):
             "sweep_start",  # Default is 0, where to start sweep
             "initial_sweep_direction",  # Default is None, True means forward sweep (left-to-right)
             "stack_mem_ratio",
+            "original_data_file_path",
         ],
     )
 
