@@ -9,7 +9,11 @@ import h5py
 import numpy as np
 import numpy.testing as npt
 import scipy as sp
+import block2
+from block2 import SU2
+from typing import Union, List, Tuple
 from pyblock2.driver.core import DMRGDriver, SymmetryTypes
+from pyblock2 import tools
 
 import dmrghandler.config_io as config_io
 import dmrghandler.dmrg_calc_prepare as dmrg_calc_prepare
@@ -17,6 +21,7 @@ import dmrghandler.slurm_scripts as slurm_scripts
 import dmrghandler.pyscf_wrappers as pyscf_wrappers
 import dmrghandler.qchem_dmrg_calc as qchem_dmrg_calc
 import pyscf.tools.fcidump
+
 
 test_rtol = 1e-5
 test_atol = 1e-8
@@ -172,6 +177,7 @@ class TestSingleCalcWholeRun(unittest.TestCase):
                 discarded_weights = f["/final_dmrg_results/past_discarded_weights"][:]
 
                 self.check_csf_presence_and_threshold(config_dict, f)
+                self.compare_overlaps_with_orig_method(scratch_sim_path, hdf5_file=f)
 
             log.info(f"dmrg_energies: {dmrg_energies}")
             log.info(f"dmrg_bond_dimensions: {dmrg_bond_dimensions}")
@@ -293,6 +299,7 @@ class TestSingleCalcWholeRun(unittest.TestCase):
                 discarded_weights = f["/final_dmrg_results/past_discarded_weights"][:]
 
                 self.check_csf_presence_and_threshold(config_dict, f)
+                self.compare_overlaps_with_orig_method(scratch_sim_path, hdf5_file=f)
 
             log.info(f"dmrg_energies: {dmrg_energies}")
             log.info(f"dmrg_bond_dimensions: {dmrg_bond_dimensions}")
@@ -414,6 +421,7 @@ class TestSingleCalcWholeRun(unittest.TestCase):
                 discarded_weights = f["/final_dmrg_results/past_discarded_weights"][:]
 
                 self.check_csf_presence_and_threshold(config_dict, f)
+                self.compare_overlaps_with_orig_method(scratch_sim_path, hdf5_file=f)
 
             log.info(f"dmrg_energies: {dmrg_energies}")
             log.info(f"dmrg_bond_dimensions: {dmrg_bond_dimensions}")
@@ -536,6 +544,7 @@ class TestSingleCalcWholeRun(unittest.TestCase):
                 discarded_weights = f["/final_dmrg_results/past_discarded_weights"][:]
 
                 self.check_csf_presence_and_threshold(config_dict, f)
+                self.compare_overlaps_with_orig_method(scratch_sim_path, hdf5_file=f)
 
             log.info(f"dmrg_energies: {dmrg_energies}")
             log.info(f"dmrg_bond_dimensions: {dmrg_bond_dimensions}")
@@ -657,6 +666,7 @@ class TestSingleCalcWholeRun(unittest.TestCase):
                 discarded_weights = f["/final_dmrg_results/past_discarded_weights"][:]
 
                 self.check_csf_presence_and_threshold(config_dict, f)
+                self.compare_overlaps_with_orig_method(scratch_sim_path, hdf5_file=f)
 
             log.info(f"dmrg_energies: {dmrg_energies}")
             log.info(f"dmrg_bond_dimensions: {dmrg_bond_dimensions}")
@@ -778,6 +788,7 @@ class TestSingleCalcWholeRun(unittest.TestCase):
                 discarded_weights = f["/final_dmrg_results/past_discarded_weights"][:]
 
                 self.check_csf_presence_and_threshold(config_dict, f)
+                self.compare_overlaps_with_orig_method(scratch_sim_path, hdf5_file=f)
 
             log.info(f"dmrg_energies: {dmrg_energies}")
             log.info(f"dmrg_bond_dimensions: {dmrg_bond_dimensions}")
@@ -1203,6 +1214,7 @@ class TestSingleCalcWholeRun(unittest.TestCase):
                 dmrg_bond_dimensions = f["/final_dmrg_results/bond_dims_used"][:]
                 discarded_weights = f["/final_dmrg_results/past_discarded_weights"][:]
                 self.check_csf_presence_and_threshold(config_dict, f)
+                self.compare_overlaps_with_orig_method(scratch_sim_path, hdf5_file=f)
 
             log.info(f"dmrg_energies: {dmrg_energies}")
             log.info(f"dmrg_bond_dimensions: {dmrg_bond_dimensions}")
@@ -1324,6 +1336,7 @@ class TestSingleCalcWholeRun(unittest.TestCase):
                 dmrg_bond_dimensions = f["/final_dmrg_results/bond_dims_used"][:]
                 discarded_weights = f["/final_dmrg_results/past_discarded_weights"][:]
                 self.check_csf_presence_and_threshold(config_dict, f)
+                self.compare_overlaps_with_orig_method(scratch_sim_path, hdf5_file=f)
 
             log.info(f"dmrg_energies: {dmrg_energies}")
             log.info(f"dmrg_bond_dimensions: {dmrg_bond_dimensions}")
@@ -1486,6 +1499,7 @@ class TestSingleCalcWholeRun(unittest.TestCase):
                 dmrg_bond_dimensions = f["/final_dmrg_results/bond_dims_used"][:]
                 discarded_weights = f["/final_dmrg_results/past_discarded_weights"][:]
                 self.check_csf_presence_and_threshold(config_dict, f)
+                self.compare_overlaps_with_orig_method(scratch_sim_path, hdf5_file=f)
 
                 # Check if the v_score is present
                 self.assertTrue(
@@ -1699,6 +1713,7 @@ class TestSingleCalcWholeRun(unittest.TestCase):
                 dmrg_bond_dimensions = f["/final_dmrg_results/bond_dims_used"][:]
                 discarded_weights = f["/final_dmrg_results/past_discarded_weights"][:]
                 self.check_csf_presence_and_threshold(config_dict, f)
+                self.compare_overlaps_with_orig_method(scratch_sim_path, hdf5_file=f)
 
                 # Check if the v_score is present
                 self.assertTrue(
@@ -1923,6 +1938,172 @@ class TestSingleCalcWholeRun(unittest.TestCase):
                 discarded_weights = f["/final_dmrg_results/past_discarded_weights"][:]
 
                 self.check_csf_presence_and_threshold(config_dict, f)
+                self.compare_overlaps_with_orig_method(scratch_sim_path, hdf5_file=f)
+
+            log.info(f"dmrg_energies: {dmrg_energies}")
+            log.info(f"dmrg_bond_dimensions: {dmrg_bond_dimensions}")
+            log.info(f"discarded_weights: {discarded_weights}")
+
+            # Assert that the initial ket was not kept, while the optimized ket was
+            # Do this by checking the folder names in the data storage folder that is part of scratch sim
+            # The optimized ket folder should be there, while the initial ket folder should not
+            # The optimized ket folders end with "ket_optimized", while the initial ket folders end with "initial_ket"
+            calc_uuid = data_config["folder_uuid"]
+            data_storage_folder = (
+                Path(scratch_sim_path)
+                / Path("data_storage")
+                / Path(calc_uuid)
+                / Path("mps_storage")
+            )
+            # Check if the folder exists
+            assert (
+                data_storage_folder.exists()
+            ), f"Folder {data_storage_folder} does not exist"
+
+            # Get folders inside, using Pathlib
+            data_storage_folder_contents = [
+                x.name for x in data_storage_folder.iterdir() if x.is_dir()
+            ]
+
+            log.info(f"data_storage_folder_contents: {data_storage_folder_contents}")
+            # Loop through folder names and check if they contain "ket_optimized" or "initial_ket"
+            num_optimized_ket_folders = 0
+            num_initial_ket_folders = 0
+            for folder_name in data_storage_folder_contents:
+                if "ket_optimized" in folder_name:
+                    num_optimized_ket_folders += 1
+                if "initial_ket" in folder_name:
+                    num_initial_ket_folders += 1
+
+            self.assertTrue(
+                num_optimized_ket_folders == len(data_storage_folder_contents),
+                f"num_optimized_ket_folders: {num_optimized_ket_folders}, num_initial_ket_folders: {num_initial_ket_folders}, num_folders: {len(data_storage_folder_contents)}",
+            )
+            self.assertTrue(
+                num_initial_ket_folders == 0,
+                f"num_optimized_ket_folders: {num_optimized_ket_folders}, num_initial_ket_folders: {num_initial_ket_folders}, num_folders: {len(data_storage_folder_contents)}",
+            )
+            # Assert that the final energy is close to the expected value
+
+            npt.assert_allclose(
+                dmrg_energies[0], -5103.5559419269, rtol=test_rtol, atol=1e-3
+            )
+
+    def test_4a_48_qubits_csf_coeff_comparison(self):
+        # data_file = "fcidump.test"
+
+        data_files_folder = Path("./tests/test_data")
+
+        data_file_list_file = [
+            "fcidump.test",
+        ]
+
+        data_file_list = []
+        for data_file in data_file_list_file:
+            data_file_path = Path(data_files_folder) / Path(data_file)
+            data_file_list.append(str(data_file_path))
+        print(
+            f"data_file_list: {data_file_list}"
+        )  # IF ERRORS HERE, WRONG PYTHON VERSION!!!!!
+
+        config_dict = {
+            "plot_filename_prefix_list": [
+                "4a_48qubit_test",
+            ],
+            "main_storage_folder_path_prefix": "./data_storage",
+            "max_bond_dimension_list": [30],
+            "max_time_limit_sec_list": [4 * 60],  # 10 min #[240],  # 4min
+            "min_energy_change_hartree_list": [1e-4],
+            "extrapolation_type_list": ["discard_weights"],
+            "starting_bond_dimension_list": [5],
+            "max_num_sweeps_list": [20],
+            "energy_convergence_threshold_list": [1e-8],
+            "sweep_schedule_bond_dims_parameters": [
+                [(2, 4), (1, 5)]
+            ],  # (division_factor, count),
+            # e.g. [(2, 4), (1, 5)] and init_bd of 3 ->[1, 1, 1, 1, 3, 3, 3, 3, 3]
+            "sweep_schedule_noise_list": [[1e-4] * 4 + [1e-5] * 4 + [0]],
+            "sweep_schedule_davidson_threshold_list": [[1e-10] * 9],
+            "init_state_bond_dimension_division_factor_list": [2],
+            "init_state_seed_list": [658724],
+            "initial_mps_method_list": ["random"],
+            "factor_half_convention_list": [True],
+            # "symmetry_type_list": ["SZ", "SZ", "SU(2)", "SU(2)"],
+            "symmetry_type_list": ["SU(2)"],
+            "num_threads_list": [4],
+            "n_mkl_threads_list": [1],
+            "track_mem": [False],
+            "reordering_method_list": ["fiedler, interaction matrix"],
+            "keep_initial_ket_bool_list": [False],
+            "csf_coeff_threshold_list": [0.1],
+        }
+
+        dmrg_advanced_config = {
+            "occupancy_hint": None,
+            "full_fci_space_bool": True,
+            "init_state_direct_two_site_construction_bool": False,
+            "davidson_type": None,  # Default is None, for "Normal"
+            "eigenvalue_cutoff": 1e-20,  # Cutoff of eigenvalues, default is 1e-20
+            "davidson_max_iterations": 4000,  # Default is 4000
+            "davidson_max_krylov_subspace_size": 50,  # Default is 50
+            "lowmem_noise_bool": False,  # Whether to use a lower memory version of the noise, default is False
+            "sweep_start": 0,  # Default is 0, where to start sweep
+            "initial_sweep_direction": None,  # Default is None, True means forward sweep (left-to-right)
+            "stack_mem": 10 * 1024 * 1024 * 1024,  # =170*1024*1024*1024
+            "stack_mem_ratio": 0.9,
+            # "do_single_calc": False,
+            "num_states": 1,
+        }
+
+        config_files_list, config_dict_single_file_list = config_io.gen_config_files(
+            data_file_list=data_file_list,
+            config_dict=config_dict,
+            dmrg_advanced_config=dmrg_advanced_config,
+            config_file_prefix="4a_48qubit_test_",
+        )
+        print(f"config_files_list: {config_files_list}")
+        # print(f"config_dict_single_file_list: {config_dict_single_file_list}")
+
+        submit_dict = {
+            "time_cap_string": "00-23:59:00",
+            "job_name": "dmrg_thresholding",
+            "email": "joshua.cantin@utoronto.ca",
+            "account_name": "rrg-izmaylov",
+            "tasks_per_node": "1",
+            "cpus_per_task": "40",
+            "partition": "debug",
+            "python_environment_location": "env_dmrg_thresholding",
+        }
+
+        slurm_scripts.gen_run_files(submit_dict, config_dict_single_file_list)
+
+        submit_commands = slurm_scripts.gen_submit_commands(
+            config_dict_single_file_list
+        )
+        scratch_sim_path = Path("tests/scratch_sim")
+        scratch_sim_path.mkdir(parents=True, exist_ok=True)
+        scratch_sim_path_absolute = scratch_sim_path.resolve()
+        for config_dict in config_dict_single_file_list:
+            data_config = config_dict["data_config"]
+            python_run_file_name = data_config["python_run_file"]
+            os.environ["SCRATCH"] = str(scratch_sim_path_absolute)
+            return_value = os.system(
+                f"env_dmrghandler/bin/python {python_run_file_name}"
+            )
+            if return_value != 0:
+                raise Exception("DMRG failed to run properly")
+            log.debug("DMRG NOW EXITED")
+            # Get results
+            main_storage_folder_path = data_config["main_storage_folder_path"]
+            hdf5_file_path = Path(main_storage_folder_path) / Path("dmrg_results.hdf5")
+
+            with h5py.File(hdf5_file_path, "r") as f:
+                dmrg_energies = f["/final_dmrg_results/past_energies_dmrg"][:]
+                dmrg_bond_dimensions = f["/final_dmrg_results/bond_dims_used"][:]
+                discarded_weights = f["/final_dmrg_results/past_discarded_weights"][:]
+
+                self.check_csf_presence_and_threshold(config_dict, hdf5_file=f)
+                self.compare_overlaps_with_orig_method(scratch_sim_path, hdf5_file=f)
 
             log.info(f"dmrg_energies: {dmrg_energies}")
             log.info(f"dmrg_bond_dimensions: {dmrg_bond_dimensions}")
@@ -2070,3 +2251,124 @@ class TestSingleCalcWholeRun(unittest.TestCase):
                 print(f"Removed folder: {folder_path}")
             else:
                 print(f"Folder does not exist: {folder_path}")
+
+    def compare_overlaps_with_orig_method(self, scratch_sim_path, hdf5_file):
+
+        loops_list = []
+        subfolder = "dmrg_results"
+        # Add all keys that start with "dmrg_loop_" to the list
+        for key in hdf5_file.keys():
+            if key.startswith("dmrg_loop_"):
+                loops_list.append(key)
+            elif key == "first_preloop_calc":
+                loops_list.append(key)
+            elif key == "second_preloop_calc":
+                loops_list.append(key)
+
+        # Assert that the list of keys is not empty
+        self.assertTrue(len(loops_list) > 0, "No loops found in hdf5 file")
+
+        # Get and compare overlaps for each loop
+        for loop in loops_list:
+            # Get the overlap data from the hdf5 file
+            csf_coefficients_real_part = hdf5_file[
+                f"/{loop}/{subfolder}/csf_coefficients_real_part"
+            ][:]
+            csf_coefficients_imag_part = hdf5_file[
+                f"/{loop}/{subfolder}/csf_coefficients_imag_part"
+            ][:]
+            csf_definitions = hdf5_file[f"/{loop}/{subfolder}/csf_definitions"][:]
+            csf_coeff_threshold = hdf5_file[f"/{loop}/{subfolder}/csf_coeff_threshold"][
+                ()
+            ]
+            largest_csf_coefficient_real_part = hdf5_file[
+                f"/{loop}/{subfolder}/largest_csf_coefficient_real_part"
+            ][()]
+            largest_csf_coefficient_imag_part = hdf5_file[
+                f"/{loop}/{subfolder}/largest_csf_coefficient_imag_part"
+            ][()]
+            largest_csf = hdf5_file[f"/{loop}/{subfolder}/largest_csf"][:]
+
+            mps_directory = (
+                Path(scratch_sim_path)
+                / "data_storage"
+                / Path(str(hdf5_file[f"/{loop}/{subfolder}/ket_optimized_storage"][()].decode("utf-8")))
+            )
+
+            num_electrons = int(hdf5_file[f"/{loop}/dmrg_parameters/num_electrons"][()])
+            two_S = int(hdf5_file[f"/{loop}/dmrg_parameters/two_S"][()])
+            num_orbitals = int(hdf5_file[f"/{loop}/dmrg_parameters/num_orbitals"][()])
+
+            driver = DMRGDriver(
+                scratch="./tmp", symm_type=SymmetryTypes.SU2, n_threads=1
+            )
+            driver.initialize_system(
+                n_sites=num_orbitals,
+                n_elec=num_electrons,
+                spin=two_S,
+            )
+            ket = self.load_mps(mps_directory)
+
+            largest_coeff_orig_method, largest_csf_orig_method = self.max_det_coeff(
+                driver, ket, cutoff=csf_coeff_threshold
+            )
+
+            # Assert that the largest coefficient from the original method is the same as the one in the hdf5 file
+            self.assertTrue(
+                np.allclose(
+                    largest_coeff_orig_method.real,
+                    largest_csf_coefficient_real_part,
+                ),
+                f"largest_coeff_orig_method: {largest_coeff_orig_method}, largest_csf_coefficient_real_part: {largest_csf_coefficient_real_part}",
+            )
+            self.assertTrue(
+                np.allclose(
+                    largest_coeff_orig_method.imag,
+                    largest_csf_coefficient_imag_part,
+                ),
+                f"largest_coeff_orig_method: {largest_coeff_orig_method}, largest_csf_coefficient_imag_part: {largest_csf_coefficient_imag_part}",
+            )
+
+        # Assert that the largest csf from the original method is the same as the one in the hdf5 file
+        self.assertTrue(
+            np.allclose(
+                largest_csf_orig_method,
+                largest_csf,
+            ),
+            f"largest_csf_orig_method: {largest_csf_orig_method}, largest_csf: {largest_csf}",
+        )
+
+    def max_det_coeff(
+        self,
+        driver: DMRGDriver,
+        ket: Union[block2.sz.MPS, block2.su2.MPS],
+        cutoff: float = 0.001,
+    ) -> Tuple[float, List[int]]:
+        """Get the abs weight of the dominant CSF in a DMRG solution and
+        a corresponding occupation number representation.
+
+        Args:
+            driver: Block2 DMRG driver initialized with the parameters
+                    used when generating the solution.
+            ket: Block2 MPS ket.
+            cuttoff: positive floating point cutoff for the minimum expansion
+                    coefficient value sampled from MPS.
+        Returns: a tuple of the maximum absolute CSF weight and its occupation
+                number representation.
+
+        From Alex Kunitsa: https://github.com/isi-usc-edu/qb-gsee-benchmark/blob/67a82d31f2958a9c458287429b6df37503d55ff9/src/qb_gsee_benchmark/dmrg_utils.py#L10
+        """
+
+        csfs, coeffs = driver.get_csf_coefficients(ket, cutoff=cutoff, iprint=0)
+        abs_coeffs = np.abs(coeffs)
+        return coeffs[np.argmax(abs_coeffs)], csfs[np.argmax(abs_coeffs)]
+
+    def load_mps(self, directory) -> Union[block2.sz.MPS, block2.su2.MPS]:
+        """Given a directory where Block2 MPS was save produces an Block2
+        MPS object; a driver object should be initialized to use this function.
+        From Alex Kunitsa: https://github.com/isi-usc-edu/qb-gsee-benchmark/blob/67a82d31f2958a9c458287429b6df37503d55ff9/src/qb_gsee_benchmark/dmrg_utils.py#L31
+        """
+
+        tools.init(SU2)
+        mps = tools.loadMPSfromDir(mps_info=None, mpsSaveDir=directory)
+        return mps
