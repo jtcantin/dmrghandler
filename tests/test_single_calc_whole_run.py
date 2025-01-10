@@ -2156,13 +2156,14 @@ class TestSingleCalcWholeRun(unittest.TestCase):
 
     def check_csf_presence_and_threshold(self, config_dict, hdf5_file):
         to_assert_presence_list = [
-            "csf_coefficients_real_part",
-            "csf_coefficients_imag_part",
-            "csf_definitions",
+            "csf_coefficients_top20_real_part",
+            "csf_coefficients_top20_imag_part",
+            "csf_definitions_top20",
             "csf_coeff_threshold",
             "largest_csf_coefficient_real_part",
             "largest_csf_coefficient_imag_part",
             "largest_csf",
+            "num_csf",
         ]
         loops_list = []
         subfolder = "dmrg_results"
@@ -2179,6 +2180,34 @@ class TestSingleCalcWholeRun(unittest.TestCase):
         self.assertTrue(len(loops_list) > 0, "No loops found in hdf5 file")
         # Assert that the csf data is present
         for loop in loops_list:
+            # Check that csf_coefficients_top20_real_part and csf_coefficients_top20_imag_part are 20 long
+            value = len(
+                hdf5_file[f"/{loop}/{subfolder}/csf_coefficients_top20_real_part"][:]
+            )
+            self.assertTrue(
+                value <= 20,
+                f"csf_coefficients_top20_real_part is not 20 long: {value}",
+            )
+            value = len(
+                hdf5_file[f"/{loop}/{subfolder}/csf_coefficients_top20_imag_part"][:]
+            )
+            self.assertTrue(
+                value <= 20,
+                f"csf_coefficients_top20_imag_part is not 20 long: {value}",
+            )
+            # Check csf_definitions_top20 is 2D and first dimension is 20; second dimension can be anything
+            value = hdf5_file[f"/{loop}/{subfolder}/csf_definitions_top20"].shape[0]
+            self.assertTrue(
+                value <= 20,
+                f"csf_definitions_top20 is not 20 long: {value}",
+            )
+            value = len(hdf5_file[f"/{loop}/{subfolder}/csf_definitions_top20"].shape)
+
+            self.assertTrue(
+                value == 2,
+                f"csf_definitions_top20 is not 2D: {value}",
+            )
+
             for key in to_assert_presence_list:
                 self.assertTrue(
                     f"/{loop}/{subfolder}/{key}" in hdf5_file,
@@ -2271,13 +2300,6 @@ class TestSingleCalcWholeRun(unittest.TestCase):
         # Get and compare overlaps for each loop
         for loop in loops_list:
             # Get the overlap data from the hdf5 file
-            csf_coefficients_real_part = hdf5_file[
-                f"/{loop}/{subfolder}/csf_coefficients_real_part"
-            ][:]
-            csf_coefficients_imag_part = hdf5_file[
-                f"/{loop}/{subfolder}/csf_coefficients_imag_part"
-            ][:]
-            csf_definitions = hdf5_file[f"/{loop}/{subfolder}/csf_definitions"][:]
             csf_coeff_threshold = hdf5_file[f"/{loop}/{subfolder}/csf_coeff_threshold"][
                 ()
             ]
@@ -2292,7 +2314,13 @@ class TestSingleCalcWholeRun(unittest.TestCase):
             mps_directory = (
                 Path(scratch_sim_path)
                 / "data_storage"
-                / Path(str(hdf5_file[f"/{loop}/{subfolder}/ket_optimized_storage"][()].decode("utf-8")))
+                / Path(
+                    str(
+                        hdf5_file[f"/{loop}/{subfolder}/ket_optimized_storage"][
+                            ()
+                        ].decode("utf-8")
+                    )
+                )
             )
 
             num_electrons = int(hdf5_file[f"/{loop}/dmrg_parameters/num_electrons"][()])
