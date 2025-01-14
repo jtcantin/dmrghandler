@@ -2156,8 +2156,8 @@ class TestSingleCalcWholeRun(unittest.TestCase):
 
     def check_csf_presence_and_threshold(self, config_dict, hdf5_file):
         to_assert_presence_list = [
-            "csf_coefficients_top20_real_part",
-            "csf_coefficients_top20_imag_part",
+            "csf_coefficients_real_part",
+            "csf_coefficients_imag_part",
             "csf_definitions_top20",
             "csf_coeff_threshold",
             "largest_csf_coefficient_real_part",
@@ -2180,20 +2180,17 @@ class TestSingleCalcWholeRun(unittest.TestCase):
         self.assertTrue(len(loops_list) > 0, "No loops found in hdf5 file")
         # Assert that the csf data is present
         for loop in loops_list:
-            # Check that csf_coefficients_top20_real_part and csf_coefficients_top20_imag_part are 20 long
-            value = len(
-                hdf5_file[f"/{loop}/{subfolder}/csf_coefficients_top20_real_part"][:]
-            )
+            num_csf = hdf5_file[f"/{loop}/{subfolder}/num_csf"][()]
+            # Check that csf_coefficients_real_part and csf_coefficients_imag_part match num_csf
+            value = len(hdf5_file[f"/{loop}/{subfolder}/csf_coefficients_real_part"][:])
             self.assertTrue(
-                value <= 20,
-                f"csf_coefficients_top20_real_part is not 20 long: {value}",
+                value == num_csf,
+                f"csf_coefficients_real_part is not num_csf long: {value}, num_csf: {num_csf}",
             )
-            value = len(
-                hdf5_file[f"/{loop}/{subfolder}/csf_coefficients_top20_imag_part"][:]
-            )
+            value = len(hdf5_file[f"/{loop}/{subfolder}/csf_coefficients_imag_part"][:])
             self.assertTrue(
-                value <= 20,
-                f"csf_coefficients_top20_imag_part is not 20 long: {value}",
+                value == num_csf,
+                f"csf_coefficients_imag_part is not num_csf long: {value}, num_csf: {num_csf}",
             )
             # Check csf_definitions_top20 is 2D and first dimension is 20; second dimension can be anything
             value = hdf5_file[f"/{loop}/{subfolder}/csf_definitions_top20"].shape[0]

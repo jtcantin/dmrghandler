@@ -21,7 +21,7 @@ default_sweep_schedule_bond_dims = [default_final_bond_dim] * 4 + [
 ] * 4
 default_sweep_schedule_noise = [1e-4] * 4 + [1e-5] * 4 + [0]
 default_sweep_schedule_davidson_threshold = [1e-10] * 8
-CSF_COEFF_THRESHOLD_DEFAULT = 1e-5
+CSF_COEFF_THRESHOLD_DEFAULT = 1e-4
 
 
 def single_qchem_dmrg_calc_mem_tracking(*args, track_mem=False, **kwargs):
@@ -624,6 +624,12 @@ def single_qchem_dmrg_calc(
     largest_csf_coefficient = csf_coefficients[np.argmax(abs_coeffs)]
     largest_csf = csf_definitions[np.argmax(abs_coeffs),:]
 
+    argsort_abs_coeffs = np.argsort(abs_coeffs) # Smallest to largest
+    sorted_abs_coeffs = abs_coeffs[argsort_abs_coeffs]
+    sorted_csf_definitions = csf_definitions[argsort_abs_coeffs,:]
+    sorted_csf_coefficients = csf_coefficients[argsort_abs_coeffs]
+
+
     dmrg_discarded_weight = sweep_max_discarded_weight[-1]
     dmrg_results_dict = {
         "dmrg_driver": driver,
@@ -659,9 +665,9 @@ def single_qchem_dmrg_calc(
         "reordering_indices_used": reordering_indices,
         "reordering_method_used": reordering_method,
         "initial_ket_energy": initial_ket_energy,
-        "csf_coefficients_top20_real_part": np.real(csf_coefficients[:20]),
-        "csf_coefficients_top20_imag_part": np.imag(csf_coefficients[:20]),
-        "csf_definitions_top20": csf_definitions[:20,:],
+        "csf_coefficients_real_part": np.real(sorted_csf_coefficients),
+        "csf_coefficients_imag_part": np.imag(sorted_csf_coefficients),
+        "csf_definitions_top20": sorted_csf_definitions[-20:,:],
         "num_csf": len(csf_coefficients),
         "csf_coeff_threshold": csf_coeff_threshold,
         "largest_csf_coefficient_real_part": np.real(largest_csf_coefficient),
