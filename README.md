@@ -1,8 +1,6 @@
 # dmrghandler
 
-Handle DMRG calculations. The running code and submit script generation code is currently here. 
-
-A usuage example for the Niagara cluster is `examples/example_niagara_prepare_calcs_gsee_benchmark_coarse_set.py`. After this is run, configuration files and submit commands are generated. 
+A wrapper for the DMRG code Block2 ([Repository](https://github.com/block-hczhai/block2-preview), [paper](https://doi.org/10.1063/5.0180424)) to facilitate preparing DMRG calculations, processing the results, and running on the Niagara Compute Canada cluster.
 
 ## Installation
 
@@ -24,11 +22,9 @@ python -m pip install --extra-index-url=https://block-hczhai.github.io/block2-pr
 
 ## Usage
 
-- TODO
+A usage example for the Niagara cluster is `examples/example_niagara_prepare_calcs_gsee_benchmark_coarse_set.py`. After this is run, configuration files and submit commands are generated. 
 
-## Contributing
-
-Interested in contributing? Check out the contributing guidelines. Please note that this project is released with a Code of Conduct. By contributing to this project, you agree to abide by its terms.
+A usage example for running locally can be found as part of qb-gsee-benchmark: [run_dmrg.ipynb](https://github.com/isi-usc-edu/qb-gsee-benchmark/blob/main/examples/run_dmrg.ipynb)
 
 ## License
 
